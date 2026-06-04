@@ -679,25 +679,25 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
                       </div>
                     </div>
                     <div className="p-3 space-y-2">
-                      {tiersForNetwork.map(t => {
-                        const count = availableCount(net.id, t.tier);
-                        const visual = getTierVisual(t.tier);
-                        const tierKey = `${net.id}-${t.tier}`;
+                      {tiersForNetwork.map(tier => {
+                        const count = availableCount(net.id, tier.tier);
+                        const visual = getTierVisual(tier.tier);
+                        const tierKey = `${net.id}-${tier.tier}`;
                         const isPurchasing = purchasingTier === tierKey;
-                        const canAfford = userBalance >= t.price;
+                        const canAfford = userBalance >= tier.price;
                         return (
-                          <div key={t.tier} className={`flex items-center justify-between rounded-xl p-3 transition-all ${visual.bg} ${count === 0 ? "opacity-50" : ""}`}>
+                          <div key={tier.tier} className={`flex items-center justify-between rounded-xl p-3 transition-all ${visual.bg} ${count === 0 ? "opacity-50" : ""}`}>
                             <div className="flex items-center gap-2">
-                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br ${visual.gradient} text-white shadow-sm shrink-0`}><span className="text-xs font-black">{t.price}</span></div>
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br ${visual.gradient} text-white shadow-sm shrink-0`}><span className="text-xs font-black">{tier.price}</span></div>
                               <div>
-                                <p className="text-sm font-bold text-gray-900">{t.data}</p>
-                                <div className="flex items-center gap-2 text-[10px] text-gray-400"><span className="flex items-center gap-0.5"><Clock className="w-2.5 h-2.5" />{t.duration} {t("cards2.days")}</span><span>{t.icon} {t("cards2.category")} {t.price} ر.ي</span></div>
+                                <p className="text-sm font-bold text-gray-900">{tier.data}</p>
+                                <div className="flex items-center gap-2 text-[10px] text-gray-400"><span className="flex items-center gap-0.5"><Clock className="w-2.5 h-2.5" />{tier.duration} {t("cards2.days")}</span><span>{tier.icon} {t("cards2.category")} {tier.price} ر.ي</span></div>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
                               <Badge className={`text-[9px] h-5 ${count > 0 ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-400"}`}>{count} {t("cards2.available")}</Badge>
-                              <span className={`font-black text-sm ${canAfford ? "text-[#1B7A3D]" : "text-red-400"}`}>{t.price} ر.ي</span>
-                              <Button onClick={() => handleBuyTier(net.id, t.tier)} disabled={count === 0 || isPurchasing || !!purchasingTier || !canAfford} className="bg-gradient-to-l from-[#1B7A3D] to-[#22A24D] text-white font-bold rounded-xl h-9 px-4 text-xs btn-green-shadow disabled:opacity-50 disabled:cursor-not-allowed">{isPurchasing ? "⏳" : !canAfford ? "💸" : t("cards2.buy")}</Button>
+                              <span className={`font-black text-sm ${canAfford ? "text-[#1B7A3D]" : "text-red-400"}`}>{tier.price} ر.ي</span>
+                              <Button onClick={() => handleBuyTier(net.id, tier.tier)} disabled={count === 0 || isPurchasing || !!purchasingTier || !canAfford} className="bg-gradient-to-l from-[#1B7A3D] to-[#22A24D] text-white font-bold rounded-xl h-9 px-4 text-xs btn-green-shadow disabled:opacity-50 disabled:cursor-not-allowed">{isPurchasing ? "⏳" : !canAfford ? "💸" : t("cards2.buy")}</Button>
                             </div>
                           </div>
                         );
@@ -758,25 +758,25 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
                         </div>
                       </div>
                       <div className="p-3 space-y-2">
-                        {tiersForNetwork.map(t => {
-                          const count = availableCount(net.id, t.tier);
-                          const visual = getTierVisual(t.tier);
-                          const tierKey = `${net.id}-${t.tier}`;
+                        {tiersForNetwork.map(tier => {
+                          const count = availableCount(net.id, tier.tier);
+                          const visual = getTierVisual(tier.tier);
+                          const tierKey = `${net.id}-${tier.tier}`;
                           const isPurchasing = purchasingTier === tierKey;
-                          const canAfford = userBalance >= t.price;
+                          const canAfford = userBalance >= tier.price;
                           return (
-                            <div key={t.tier} className={`flex items-center justify-between rounded-xl p-3 transition-all ${visual.bg} ${count === 0 ? "opacity-50" : ""}`}>
+                            <div key={tier.tier} className={`flex items-center justify-between rounded-xl p-3 transition-all ${visual.bg} ${count === 0 ? "opacity-50" : ""}`}>
                               <div className="flex items-center gap-2">
-                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br ${visual.gradient} text-white shadow-sm shrink-0`}><span className="text-xs font-black">{t.price}</span></div>
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br ${visual.gradient} text-white shadow-sm shrink-0`}><span className="text-xs font-black">{tier.price}</span></div>
                                 <div>
-                                  <p className="text-sm font-bold text-gray-900">{t.data}</p>
-                                  <div className="flex items-center gap-2 text-[10px] text-gray-400"><span className="flex items-center gap-0.5"><Clock className="w-2.5 h-2.5" />{t.duration} {t("cards2.days")}</span><span>{t.icon} {t("cards2.category")} {t.price} ر.ي</span></div>
+                                  <p className="text-sm font-bold text-gray-900">{tier.data}</p>
+                                  <div className="flex items-center gap-2 text-[10px] text-gray-400"><span className="flex items-center gap-0.5"><Clock className="w-2.5 h-2.5" />{tier.duration} {t("cards2.days")}</span><span>{tier.icon} {t("cards2.category")} {tier.price} ر.ي</span></div>
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
                                 <Badge className={`text-[9px] h-5 ${count > 0 ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-400"}`}>{count} {t("cards2.available")}</Badge>
-                                <span className={`font-black text-sm ${canAfford ? "text-[#1B7A3D]" : "text-red-400"}`}>{t.price} ر.ي</span>
-                                <Button onClick={() => handleBuyTier(net.id, t.tier)} disabled={count === 0 || isPurchasing || !!purchasingTier || !canAfford} className="bg-gradient-to-l from-[#1B7A3D] to-[#22A24D] text-white font-bold rounded-xl h-9 px-4 text-xs btn-green-shadow disabled:opacity-50 disabled:cursor-not-allowed">{isPurchasing ? "⏳" : !canAfford ? "💸" : t("cards2.buy")}</Button>
+                                <span className={`font-black text-sm ${canAfford ? "text-[#1B7A3D]" : "text-red-400"}`}>{tier.price} ر.ي</span>
+                                <Button onClick={() => handleBuyTier(net.id, tier.tier)} disabled={count === 0 || isPurchasing || !!purchasingTier || !canAfford} className="bg-gradient-to-l from-[#1B7A3D] to-[#22A24D] text-white font-bold rounded-xl h-9 px-4 text-xs btn-green-shadow disabled:opacity-50 disabled:cursor-not-allowed">{isPurchasing ? "⏳" : !canAfford ? "💸" : t("cards2.buy")}</Button>
                               </div>
                             </div>
                           );
@@ -888,28 +888,28 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
 
                 {/* Machine Body - Tiers */}
                 <div className="p-3 space-y-2">
-                  {tiersForNetwork.map(t => {
-                    const count = availableCount(net.id, t.tier);
-                    const visual = getTierVisual(t.tier);
-                    const tierKey = `${net.id}-${t.tier}`;
+                  {tiersForNetwork.map(tier => {
+                    const count = availableCount(net.id, tier.tier);
+                    const visual = getTierVisual(tier.tier);
+                    const tierKey = `${net.id}-${tier.tier}`;
                     const isPurchasing = purchasingTier === tierKey;
-                    const canAfford = userBalance >= t.price;
+                    const canAfford = userBalance >= tier.price;
 
                     return (
                       <div
-                        key={t.tier}
+                        key={tier.tier}
                         className={`flex items-center justify-between rounded-xl p-3 transition-all ${visual.bg} ${count === 0 ? "opacity-50" : ""}`}
                       >
                         <div className="flex items-center gap-2">
                           {/* Tier price badge */}
                           <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br ${visual.gradient} text-white shadow-sm shrink-0`}>
-                            <span className="text-xs font-black">{t.price}</span>
+                            <span className="text-xs font-black">{tier.price}</span>
                           </div>
                           <div>
-                            <p className="text-sm font-bold text-gray-900">{t.data}</p>
+                            <p className="text-sm font-bold text-gray-900">{tier.data}</p>
                             <div className="flex items-center gap-2 text-[10px] text-gray-400">
-                              <span className="flex items-center gap-0.5"><Clock className="w-2.5 h-2.5" />{t.duration} {t("cards2.days")}</span>
-                              <span>{t.icon} {t("cards2.category")} {t.price} ر.ي</span>
+                              <span className="flex items-center gap-0.5"><Clock className="w-2.5 h-2.5" />{tier.duration} {t("cards2.days")}</span>
+                              <span>{tier.icon} {t("cards2.category")} {tier.price} ر.ي</span>
                             </div>
                           </div>
                         </div>
@@ -919,9 +919,9 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
                           >
                             {count} {t("cards2.available")}
                           </Badge>
-                          <span className={`font-black text-sm ${canAfford ? "text-[#1B7A3D]" : "text-red-400"}`}>{t.price} ر.ي</span>
+                          <span className={`font-black text-sm ${canAfford ? "text-[#1B7A3D]" : "text-red-400"}`}>{tier.price} ر.ي</span>
                           <Button
-                            onClick={() => handleBuyTier(net.id, t.tier)}
+                            onClick={() => handleBuyTier(net.id, tier.tier)}
                             disabled={count === 0 || isPurchasing || !!purchasingTier || !canAfford}
                             className="bg-gradient-to-l from-[#1B7A3D] to-[#22A24D] text-white font-bold rounded-xl h-9 px-4 text-xs btn-green-shadow disabled:opacity-50 disabled:cursor-not-allowed"
                           >
