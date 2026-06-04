@@ -97,13 +97,13 @@ export function isValidEmail(email: string): boolean {
 
 /**
  * Validate phone number (Yemen format).
- * Accepts formats: +967XXXXXXXXX, 967XXXXXXXXX, 0XXXXXXXXX, 7XXXXXXXX
- * Yemen mobile numbers start with 7 and are 9 digits (without country code).
+ * Accepts formats: +9677XXXXXXXX, 7XXXXXXXX
+ * Yemen mobile numbers: local part is exactly 9 digits starting with 7.
  */
 export function isValidYemenPhone(phone: string): boolean {
   if (!phone || typeof phone !== "string") return false;
   const cleaned = phone.replace(/[\s\-()]/g, "");
-  const yemenPhoneRegex = /^(\+967|967|0)?7[0-9]{8}$/;
+  const yemenPhoneRegex = /^(\+967)?7[0-9]{8}$/;
   return yemenPhoneRegex.test(cleaned);
 }
 

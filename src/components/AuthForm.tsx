@@ -86,7 +86,7 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
       return;
     }
 
-    if (mode === "register" && phone && !isValidYemenPhone(phone)) {
+    if (mode === "register" && phone && !/^7[0-9]{8}$/.test(phone)) {
       toast.error(t("auth2.invalidPhone"));
       return;
     }
@@ -257,7 +257,7 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
 
   // ─── Main Login / Register Full-Page Screen ──────────────
   return (
-    <div className="min-h-screen bg-white dark:bg-slate-900 flex flex-col" dir={isRTL ? "rtl" : "ltr"}>
+    <div className="h-screen bg-white dark:bg-slate-900 flex flex-col" dir={isRTL ? "rtl" : "ltr"}>
       {/* ===== Top Header ===== */}
       <div className="flex-shrink-0 px-4 py-3 flex items-center justify-between">
         <button
@@ -272,17 +272,17 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
 
       {/* ===== Scrollable Content ===== */}
       <div className="flex-1 overflow-y-auto">
-        <div className="px-6 pt-4 pb-8 max-w-sm mx-auto">
+        <div className="px-6 pt-2 pb-8 max-w-sm mx-auto">
 
           {/* Hero Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="text-center mb-8"
+            className="text-center mb-4"
           >
             {/* App Icon */}
-            <div className="flex justify-center mb-4">
+            <div className="flex justify-center mb-2">
               <motion.div
                 initial={{ scale: 0.5, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
@@ -310,7 +310,7 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.1 }}
-            className="space-y-4"
+            className="space-y-3"
           >
             <AnimatePresence mode="wait">
               {mode === "register" && (
@@ -320,7 +320,7 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
                   transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                  className="space-y-4 overflow-hidden"
+                  className="space-y-3 overflow-hidden"
                 >
                   {/* Name Field */}
                   <div>
@@ -330,7 +330,7 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
                       <Input
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="bg-gray-50 border-gray-200 text-gray-900 rounded-xl h-12 text-sm pr-10 focus:border-[#1B7A3D] focus:ring-[#1B7A3D]"
+                        className="bg-gray-50 border-gray-200 text-gray-900 rounded-xl h-11 text-sm pr-10 focus:border-[#1B7A3D] focus:ring-[#1B7A3D]"
                         placeholder={t("auth2.enterName")}
                         required
                       />
@@ -339,16 +339,27 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
 
                   {/* Phone Field */}
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1.5 font-bold">{t("auth2.phoneNumber")} <span className="text-gray-300">({t("auth2.optional")})</span></label>
-                    <div className="relative">
-                      <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <Input
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className="bg-gray-50 border-gray-200 text-gray-900 rounded-xl h-12 text-sm pr-10 focus:border-[#1B7A3D] focus:ring-[#1B7A3D]"
-                        placeholder="+967 7XXXXXXXX"
-                        dir="ltr"
-                      />
+                    <label className="block text-xs text-gray-500 mb-1.5 font-bold">{t("auth2.phoneNumber")}</label>
+                    <div className="flex gap-0" dir="ltr">
+                      {/* Fixed country code */}
+                      <div className="flex items-center gap-1.5 bg-gray-100 border border-gray-200 rounded-xl px-3 h-11 flex-shrink-0 border-r-0 rounded-r-none">
+                        <span className="text-base">🇾🇪</span>
+                        <span className="text-sm font-bold text-gray-600">+967</span>
+                      </div>
+                      {/* Phone input - 9 digits only */}
+                      <div className="relative flex-1">
+                        <Input
+                          value={phone}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, "").slice(0, 9);
+                            setPhone(val);
+                          }}
+                          className="bg-gray-50 border-gray-200 text-gray-900 rounded-xl rounded-l-none h-11 text-sm focus:border-[#1B7A3D] focus:ring-[#1B7A3D] border-l-0"
+                          placeholder="7XXXXXXXX"
+                          dir="ltr"
+                          maxLength={9}
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -366,7 +377,7 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="bg-gray-50 border-gray-200 text-gray-900 rounded-xl h-12 text-sm pr-10 focus:border-[#1B7A3D] focus:ring-[#1B7A3D]"
+                  className="bg-gray-50 border-gray-200 text-gray-900 rounded-xl h-11 text-sm pr-10 focus:border-[#1B7A3D] focus:ring-[#1B7A3D]"
                   placeholder="example@email.com"
                   dir="ltr"
                   required
@@ -383,7 +394,7 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
                   type={showPass ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="bg-gray-50 border-gray-200 text-gray-900 rounded-xl h-12 text-sm pr-10 pl-10 focus:border-[#1B7A3D] focus:ring-[#1B7A3D]"
+                  className="bg-gray-50 border-gray-200 text-gray-900 rounded-xl h-11 text-sm pr-10 pl-10 focus:border-[#1B7A3D] focus:ring-[#1B7A3D]"
                   placeholder="••••••••"
                   dir="ltr"
                   required
@@ -400,7 +411,7 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
 
             {/* Province / District Selection (register only) */}
             {mode === "register" && (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {/* Province Field */}
                 <div>
                   <label className="block text-xs text-gray-500 mb-1.5 font-bold">
@@ -411,7 +422,7 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
                     <select
                       value={provinceId}
                       onChange={(e) => { setProvinceId(e.target.value); setDistrict(""); }}
-                      className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl h-12 text-sm pr-10 pl-4 focus:border-[#1B7A3D] focus:ring-[#1B7A3D] appearance-none"
+                      className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl h-11 text-sm pr-10 pl-4 focus:border-[#1B7A3D] focus:ring-[#1B7A3D] appearance-none"
                     >
                       <option value="">{t("location.selectProvince")}</option>
                       {PROVINCES.map(p => (
@@ -432,7 +443,7 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
                       value={district}
                       onChange={(e) => setDistrict(e.target.value)}
                       disabled={!provinceId}
-                      className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl h-12 text-sm pr-10 pl-4 focus:border-[#1B7A3D] focus:ring-[#1B7A3D] appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl h-11 text-sm pr-10 pl-4 focus:border-[#1B7A3D] focus:ring-[#1B7A3D] appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <option value="">{provinceId ? t("location.selectDistrict") : t("location.selectProvinceFirst")}</option>
                       {provinceId && getDistricts(provinceId).map(d => (
@@ -462,7 +473,7 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
               <Button
                 type="submit"
                 disabled={submitting}
-                className="w-full bg-gradient-to-l from-[#1B7A3D] to-[#22A24D] hover:from-[#165E30] hover:to-[#134D28] text-white font-bold text-base rounded-2xl h-12 btn-green-shadow disabled:opacity-70"
+                className="w-full bg-gradient-to-l from-[#1B7A3D] to-[#22A24D] hover:from-[#165E30] hover:to-[#134D28] text-white font-bold text-base rounded-2xl h-11 btn-green-shadow disabled:opacity-70"
               >
                 {submitting ? (
                   <span className="flex items-center gap-2">
@@ -490,6 +501,7 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
           </motion.form>
 
           {/* ===== Features Section ===== */}
+          {mode === "login" && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -514,6 +526,7 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
               ))}
             </div>
           </motion.div>
+          )}
 
           {/* ===== Bottom Info ===== */}
           <motion.div

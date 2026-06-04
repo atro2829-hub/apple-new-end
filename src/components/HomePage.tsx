@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ShoppingBag, Wifi, CreditCard, Building2, Smartphone, Megaphone, Download,
   Zap, MapPin, Phone, ChevronLeft, Globe, RefreshCw, Wallet, ArrowDown,
-  TrendingUp, Star, Navigation, Clock, Satellite, Package
+  TrendingUp, Star, Navigation, Clock, Satellite, Package, Search
 } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { ref, onValue, get } from "firebase/database";
@@ -64,6 +64,7 @@ export function HomePage({ user, isAdmin, onAuthClick, onNavigate }: HomePagePro
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const [selectedNetwork, setSelectedNetwork] = useState<NetworkItem | null>(null);
+  const [networkSearch, setNetworkSearch] = useState("");
 
   useEffect(() => {
     const unsubs: (() => void)[] = [];
@@ -137,6 +138,7 @@ export function HomePage({ user, isAdmin, onAuthClick, onNavigate }: HomePagePro
   const filteredNetworks = fbNetworks.filter(net => {
     if (selectedProvince && net.provinceId !== selectedProvince) return false;
     if (selectedDistrict && net.district !== selectedDistrict) return false;
+    if (networkSearch && !net.name.toLowerCase().includes(networkSearch.toLowerCase())) return false;
     return true;
   });
 
@@ -562,6 +564,16 @@ export function HomePage({ user, isAdmin, onAuthClick, onNavigate }: HomePagePro
             <Badge className="bg-[#E8F5E9] dark:bg-green-900/30 text-[#1B7A3D] text-[9px]">
               {filteredNetworks.length} {t("home.networkCount")}
             </Badge>
+          </div>
+          {/* User/Network Search */}
+          <div className="relative mb-3">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Input
+              value={networkSearch}
+              onChange={(e) => setNetworkSearch(e.target.value)}
+              placeholder={t("home.searchNetwork")}
+              className="bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 rounded-xl h-10 text-sm pr-10"
+            />
           </div>
           <div className="grid grid-cols-2 gap-2">
             {filteredNetworks.length === 0 ? (

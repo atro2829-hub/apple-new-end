@@ -31,7 +31,7 @@ interface UserSettings {
 }
 
 export function ProfilePage({ user, onBack }: ProfilePageProps) {
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, lang, setLang } = useLanguage();
   const [userInfo, setUserInfo] = useState<AppUser | null>(null);
   const [userSettings, setUserSettings] = useState<UserSettings>({
     notificationsEnabled: true,
@@ -101,31 +101,28 @@ export function ProfilePage({ user, onBack }: ProfilePageProps) {
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
-    // Validate file size (max 2MB before compression)
     if (file.size > 2 * 1024 * 1024) {
       toast.error(t("profile.photoTooLarge"));
       return;
     }
     setIsUploadingPhoto(true);
     try {
+      // Delete old photo URL from database first (since we store base64 in RTDB)
+      // The old photo data will be overwritten by the new update
       const base64 = await compressImageToBase64(file, 256, 0.7);
-      // Check if compressed image is under 200KB
       const sizeInKB = Math.round((base64.length * 3) / 4 / 1024);
+      let finalBase64 = base64;
       if (sizeInKB > 200) {
-        // Compress more aggressively
-        const compressedAgain = await compressImageToBase64(file, 128, 0.4);
-        await update(ref(db, `users/${user.uid}`), { photoURL: compressedAgain });
-        setPhotoURL(compressedAgain);
-      } else {
-        await update(ref(db, `users/${user.uid}`), { photoURL: base64 });
-        setPhotoURL(base64);
+        finalBase64 = await compressImageToBase64(file, 128, 0.4);
       }
+      // This overwrites the old photoURL in the database
+      await update(ref(db, `users/${user.uid}`), { photoURL: finalBase64 });
+      setPhotoURL(finalBase64);
       toast.success(t("profile.photoUpdated"));
     } catch {
       toast.error(t("profile.photoFailed"));
     }
     setIsUploadingPhoto(false);
-    // Reset input
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -396,8 +393,12 @@ export function ProfilePage({ user, onBack }: ProfilePageProps) {
               </div>
             </div>
             <select
-              value={userSettings.language}
-              onChange={e => updateSetting("language", e.target.value)}
+              value={lang}
+              onChange={e => {
+                const newLang = e.target.value as "ar" | "en";
+                setLang(newLang);
+                updateSetting("language", newLang);
+              }}
               className="bg-white border border-gray-200 rounded-lg px-2 py-1 text-xs font-bold"
             >
               <option value="ar">العربية</option>

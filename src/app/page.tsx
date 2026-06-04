@@ -21,6 +21,8 @@ import {
   Globe,
   Building2,
   MapPin,
+  MessageCircle,
+  MessageSquareWarning,
 } from "lucide-react";
 import {
   auth,
@@ -55,6 +57,8 @@ import { NetworkSubmissionPage } from "@/components/NetworkSubmissionPage";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
 import { AppUpdateBanner } from "@/components/AppUpdateBanner";
 import { ProfilePage } from "@/components/ProfilePage";
+import { ChatPage } from "@/components/ChatPage";
+import { ComplaintPage } from "@/components/ComplaintPage";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { PermissionModal } from "@/components/PermissionModal";
@@ -71,8 +75,8 @@ export default function AppleNetApp() {
     { id: "home", icon: Home, label: t("nav.home") },
     { id: "cards", icon: Wifi, label: t("nav.cards") },
     { id: "starlink", icon: Satellite, label: "Starlink" },
+    { id: "chat", icon: MessageCircle, label: t("nav.chat") },
     { id: "credit", icon: Wallet, label: t("nav.credit") },
-    { id: "more", icon: MoreHorizontal, label: t("nav.more") },
   ];
 
   const [user, setUser] = useState<FirebaseUser | null>(null);
@@ -95,6 +99,7 @@ export default function AppleNetApp() {
   const [locationModalDistrict, setLocationModalDistrict] = useState("");
   const [locationModalSaving, setLocationModalSaving] = useState(false);
   const [locationModalDismissed, setLocationModalDismissed] = useState(false);
+  const [userPhotoURL, setUserPhotoURL] = useState<string>("");
 
   // Handle URL params for PWA shortcuts
   useEffect(() => {
@@ -160,6 +165,16 @@ export default function AppleNetApp() {
       if (snap.val()) setUserName(snap.val());
     });
     return () => { roleUnsub(); nameUnsub(); };
+  }, [user]);
+
+  // Listen for user photo URL
+  useEffect(() => {
+    if (!user) return;
+    const photoUnsub = onValue(ref(db, `users/${user.uid}/photoURL`), (snap) => {
+      if (snap.val()) setUserPhotoURL(snap.val());
+      else setUserPhotoURL("");
+    });
+    return () => photoUnsub();
   }, [user]);
 
   // Enhanced splash screen with progress bar animation
@@ -478,9 +493,17 @@ export default function AppleNetApp() {
                 {user && (
                   <div className="bg-gradient-to-bl from-[#E8F5E9] dark:from-green-900/20 to-[#F0FFF4] dark:to-green-900/10 rounded-2xl p-4 mb-4 border border-[#1B7A3D]/10 dark:border-green-900/20">
                     <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#1B7A3D] to-[#22A24D] flex items-center justify-center shadow-sm">
-                        <span className="text-white font-black text-base">{(userName || "م")[0].toUpperCase()}</span>
-                      </div>
+                      {userPhotoURL ? (
+                        <img
+                          src={userPhotoURL}
+                          alt={userName || "User"}
+                          className="w-11 h-11 rounded-full object-cover shadow-sm"
+                        />
+                      ) : (
+                        <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#1B7A3D] to-[#22A24D] flex items-center justify-center shadow-sm">
+                          <span className="text-white font-black text-base">{(userName || "م")[0].toUpperCase()}</span>
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{userName || t("profile.user")}</p>
                         <p className="text-[10px] text-gray-400 dark:text-slate-500 truncate" dir="ltr">{user.email}</p>
@@ -515,6 +538,7 @@ export default function AppleNetApp() {
                     { icon: CreditCard, label: t("menu.myBalance"), tab: "credit", action: () => { setActiveTab("credit"); setShowMenu(false); } },
                     { icon: ShoppingBag, label: t("menu.myPurchases"), tab: "purchased", action: () => { setActiveTab("purchased"); setShowMenu(false); } },
                     ...(user ? [{ icon: User, label: t("menu.profile"), tab: "profile", action: () => { setActiveTab("profile"); setShowMenu(false); } }] : []),
+                    { icon: MessageSquareWarning, label: t("menu.complaints"), tab: "complaints", action: () => { setActiveTab("complaints"); setShowMenu(false); } },
                     { icon: MoreHorizontal, label: t("menu.more"), tab: "more", action: () => { setActiveTab("more"); setShowMenu(false); } },
                     ...(isAdmin || userRole === "network_manager" ? [{ icon: Settings, label: t("menu.dashboard"), tab: "admin", action: () => { setShowAdmin(true); setShowMenu(false); } }] : []),
                   ].map((item, i) => (
@@ -568,6 +592,8 @@ export default function AppleNetApp() {
           {activeTab === "more" && <motion.div key="page-more" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}><MorePage user={user} isAdmin={isAdmin} onAuthClick={() => setShowAuth(true)} onNavigate={setActiveTab} /></motion.div>}
           {activeTab === "submit-network" && <motion.div key="page-submit-network" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}><NetworkSubmissionPage user={user} onAuthClick={() => setShowAuth(true)} /></motion.div>}
           {activeTab === "profile" && <motion.div key="page-profile" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}><ProfilePage user={user} onBack={() => setActiveTab("more")} /></motion.div>}
+          {activeTab === "chat" && <motion.div key="page-chat" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}><ChatPage user={user} isAdmin={isAdmin} /></motion.div>}
+          {activeTab === "complaints" && <motion.div key="page-complaints" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}><ComplaintPage user={user} isAdmin={isAdmin} /></motion.div>}
         </AnimatePresence>
       </div>
 

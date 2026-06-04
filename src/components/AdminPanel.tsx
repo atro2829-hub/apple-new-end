@@ -925,6 +925,121 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
     setIsGenerating(false);
   };
 
+  const generateGiftCardPDF = async (codes: { code: string; amount: number }[], title?: string) => {
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+    });
+
+    const pageWidth = 210;
+    const margin = 10;
+    const cardWidth = 58;
+    const cardHeight = 36;
+    const cols = 3;
+    const gapX = (pageWidth - 2 * margin - cols * cardWidth) / (cols - 1);
+    const gapY = 6;
+    const startY = 20;
+
+    // Load logo
+    let logoData: string | null = null;
+    try {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      logoData = await new Promise<string>((resolve) => {
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          canvas.width = 60;
+          canvas.height = 60;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, 60, 60);
+            resolve(canvas.toDataURL("image/jpeg"));
+          } else resolve("");
+        };
+        img.onerror = () => resolve("");
+        img.src = "/images/IMG_20260527_220851.jpg";
+      });
+    } catch { logoData = null; }
+
+    let cardIndex = 0;
+    let pageNum = 0;
+
+    for (let i = 0; i < codes.length; i++) {
+      if (cardIndex % (cols * 7) === 0) {
+        if (pageNum > 0) doc.addPage();
+        pageNum++;
+
+        // Page header
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text(title || "AppleNet Gift Cards", pageWidth / 2, 12, { align: "center" });
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Page ${pageNum}`, pageWidth / 2, 17, { align: "center" });
+      }
+
+      const code = codes[i];
+      const row = Math.floor((cardIndex % (cols * 7)) / cols);
+      const col = (cardIndex % (cols * 7)) % cols;
+      const x = margin + col * (cardWidth + gapX);
+      const y = startY + row * (cardHeight + gapY);
+
+      // Card border
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(x, y, cardWidth, cardHeight, 2, 2, "S");
+
+      // Green top bar
+      doc.setFillColor(27, 122, 61);
+      doc.rect(x, y, cardWidth, 4, "F");
+
+      // Logo
+      if (logoData) {
+        doc.addImage(logoData, "JPEG", x + 2, y + 5, 7, 7);
+      }
+
+      // AppleNet text
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(27, 122, 61);
+      doc.text("AppleNet", x + (logoData ? 11 : 2), y + 9);
+
+      // Price
+      doc.setFontSize(8);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`${code.amount} YER`, x + cardWidth - 3, y + 9, { align: "right" });
+
+      // PIN field
+      doc.setFillColor(245, 245, 245);
+      doc.roundedRect(x + 3, y + 15, cardWidth - 6, 7, 1, 1, "F");
+      doc.setFontSize(6);
+      doc.setTextColor(150, 150, 150);
+      doc.text("PIN:", x + 5, y + 18.5);
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(27, 122, 61);
+      doc.text(code.code, x + 14, y + 19.5);
+
+      // Contact
+      doc.setFontSize(5);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(150, 150, 150);
+      doc.text("Tel: 774146432", x + cardWidth / 2, y + 27, { align: "center" });
+
+      // Bottom line
+      doc.setDrawColor(27, 122, 61);
+      doc.setLineWidth(0.5);
+      doc.line(x + 3, y + cardHeight - 5, x + cardWidth - 3, y + cardHeight - 5);
+
+      doc.setTextColor(0, 0, 0);
+      cardIndex++;
+    }
+
+    doc.save(`AppleNet-Gift-Cards-${Date.now()}.pdf`);
+    toast.success(t("admin2.pdfGenerated"));
+  };
+
   const deleteRedeemCode = async (id: string, code?: string) => {
     if (deleteConfirm === `rc-${id}`) {
       try {
@@ -2651,6 +2766,53 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
                         ))}
                       </div>
                     )}
+                  </div>
+                </div>
+
+                {/* PDF Gift Card Generation */}
+                <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+                  <div className="p-4 border-b border-gray-50">
+                    <h3 className="text-sm font-bold text-orange-600 flex items-center gap-2"><FileText className="w-4 h-4" />Generate Gift Card PDF</h3>
+                  </div>
+                  <div className="p-4 space-y-3">
+                    <div className="grid grid-cols-1 gap-2">
+                      {lastGeneratedCodes.length > 0 && (
+                        <Button onClick={() => generateGiftCardPDF(lastGeneratedCodes)} className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl">
+                          <FileText className="w-4 h-4 ml-1" />Generate PDF for Last Codes ({lastGeneratedCodes.length})
+                        </Button>
+                      )}
+                      {redeemCodesList.length > 0 && (
+                        <Button onClick={() => generateGiftCardPDF(redeemCodesList.filter(c => !c.isUsed).map(c => ({ code: c.code, amount: c.amount })))} className="w-full bg-[#1B7A3D] hover:bg-[#165E30] text-white font-bold rounded-xl">
+                          <Download className="w-4 h-4 ml-1" />Generate PDF for All Codes ({redeemCodesList.filter(c => !c.isUsed).length})
+                        </Button>
+                      )}
+                      <Button
+                        onClick={async () => {
+                          const amount = Number(redeemCodeAmount) || 100;
+                          const count = Number(redeemCodeCount) || 10;
+                          if (count < 1 || count > 100) { toast.error("Count must be 1-100"); return; }
+                          setIsGenerating(true);
+                          try {
+                            const generated: { code: string; amount: number }[] = [];
+                            for (let i = 0; i < count; i++) {
+                              const code = generateCode();
+                              generated.push({ code, amount });
+                              const codeRef = push(ref(db, "redeemCodes"));
+                              await set(codeRef, { code, amount, isUsed: false, usedBy: null, usedByName: null, usedAt: null, createdAt: Date.now(), createdBy: auth.currentUser?.uid || null });
+                              await set(ref(db, `redeemCodeLookup/${code}`), { pushId: codeRef.key, amount, isUsed: false, createdAt: Date.now() });
+                            }
+                            setLastGeneratedCodes(generated);
+                            toast.success(`${t("admin2.generatedCodes")} ${count} ${t("admin2.codes")}`);
+                            await generateGiftCardPDF(generated);
+                          } catch { toast.error(t("admin2.error")); }
+                          setIsGenerating(false);
+                        }}
+                        disabled={isGenerating}
+                        className="w-full bg-gradient-to-l from-[#1B7A3D] to-[#22A24D] text-white font-bold rounded-xl"
+                      >
+                        {isGenerating ? <span className="flex items-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Generating...</span> : <><Plus className="w-4 h-4 ml-1" />Generate New Codes + PDF</>}
+                      </Button>
+                    </div>
                   </div>
                 </div>
 

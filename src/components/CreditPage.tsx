@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { db } from "@/lib/firebase";
-import { ref, onValue, get, update, push, set, runTransaction } from "firebase/database";
+import { ref, onValue, get, update, push, set, runTransaction, remove } from "firebase/database";
 import { ADEN_DISTRICTS, formatDate } from "@/lib/constants";
 import { normalizeCode } from "@/lib/utils";
 import type { CreditHistory, SubscriptionPlan, UserSubscription, NetworkItem, CardItem } from "@/lib/types";
@@ -398,6 +398,14 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
         usedByName: user.displayName || user.email || t("credit.user"),
         usedAt: Date.now(),
       });
+
+      // 6b) Delete the code from database after successful redemption
+      try {
+        await remove(ref(db, `redeemCodes/${foundCodeId}`));
+        if (enteredCode) {
+          await remove(ref(db, `redeemCodeLookup/${enteredCode}`));
+        }
+      } catch { /* non-critical - code already processed */ }
 
       // 7) Add to history
       const histRef = push(ref(db, `credit/${user.uid}/history`));

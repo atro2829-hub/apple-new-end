@@ -14,6 +14,8 @@ export function PermissionModal() {
   const [show, setShow] = useState(false);
   const [step, setStep] = useState<"notifications" | "done">("notifications");
   const [notifStatus, setNotifStatus] = useState<"idle" | "granted" | "denied" | "loading">("idle");
+  const [cameraStatus, setCameraStatus] = useState<"idle" | "granted" | "denied" | "loading">("idle");
+  const [locationStatus, setLocationStatus] = useState<"idle" | "granted" | "denied" | "loading">("idle");
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -29,17 +31,48 @@ export function PermissionModal() {
 
   const handleAllow = async () => {
     setNotifStatus("loading");
+
+    // 1) Request push notifications
     const result = await requestNotificationPermission();
     setNotifStatus(result.granted ? "granted" : "denied");
+
+    // 2) Request camera permission
+    setCameraStatus("loading");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      // Immediately stop the stream - we just needed the permission
+      stream.getTracks().forEach(track => track.stop());
+      setCameraStatus("granted");
+    } catch {
+      setCameraStatus("denied");
+    }
+
+    // 3) Request location permission
+    setLocationStatus("loading");
+    try {
+      await new Promise<void>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          () => resolve(),
+          () => reject(new Error("Location denied")),
+          { timeout: 5000 }
+        );
+      });
+      setLocationStatus("granted");
+    } catch {
+      setLocationStatus("denied");
+    }
+
     setTimeout(() => {
       handleDismiss();
-    }, 1200);
+    }, 1500);
   };
 
   const handleDismiss = () => {
     sessionStorage.setItem(DISMISSED_KEY, "1");
     setShow(false);
   };
+
+  const isProcessing = notifStatus === "loading" || cameraStatus === "loading" || locationStatus === "loading";
 
   return (
     <AnimatePresence>
@@ -88,14 +121,14 @@ export function PermissionModal() {
                     icon={<Camera className="w-5 h-5 text-blue-500" />}
                     title={t("permissions2.cameraPhotos")}
                     desc={t("permissions2.cameraDesc")}
-                    status="idle"
+                    status={cameraStatus}
                     bgColor="bg-blue-50 dark:bg-blue-900/30"
                   />
                   <PermissionItem
                     icon={<MapPin className="w-5 h-5 text-orange-500" />}
                     title={t("permissions2.location")}
                     desc={t("permissions2.locationDesc")}
-                    status="idle"
+                    status={locationStatus}
                     bgColor="bg-orange-50 dark:bg-orange-900/30"
                   />
                 </div>
@@ -117,15 +150,15 @@ export function PermissionModal() {
                   </Button>
                   <Button
                     onClick={handleAllow}
-                    disabled={notifStatus === "loading" || notifStatus === "granted"}
+                    disabled={isProcessing}
                     className="flex-1 bg-gradient-to-l from-[#1B7A3D] to-[#22A24D] hover:from-[#165E30] hover:to-[#1B7A3D] text-white font-bold rounded-2xl h-12 btn-green-shadow"
                   >
-                    {notifStatus === "loading" ? (
+                    {isProcessing ? (
                       <span className="flex items-center gap-2">
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                         {t("permissions2.enabling")}
                       </span>
-                    ) : notifStatus === "granted" ? (
+                    ) : notifStatus === "granted" && cameraStatus === "granted" && locationStatus === "granted" ? (
                       <span className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4" />
                         {t("permissions2.enabled")}
@@ -163,13 +196,18 @@ function PermissionItem({
   return (
     <div className="flex items-start gap-3 p-3 rounded-2xl bg-gray-50/50 dark:bg-slate-800/50 border border-gray-100 dark:border-slate-700">
       <div className={`w-10 h-10 rounded-xl ${bgColor} flex items-center justify-center flex-shrink-0`}>
-        {icon}
+        {status === "loading" ? (
+          <div className="w-5 h-5 border-2 border-gray-300 border-t-[#1B7A3D] rounded-full animate-spin" />
+        ) : (
+          icon
+        )}
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-bold text-gray-900 dark:text-white">{title}</p>
         <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">{desc}</p>
       </div>
       {status === "granted" && <CheckCircle className="w-5 h-5 text-[#1B7A3D] flex-shrink-0 mt-0.5" />}
+      {status === "denied" && <X className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />}
     </div>
   );
 }
