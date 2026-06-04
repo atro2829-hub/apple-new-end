@@ -60,3 +60,12 @@ upload/
 worklog.md
 db/
 firebase-rules.json
+
+# Android SDK & JDK (local only)
+android-sdk/
+jdk/
+
+# Android build outputs
+android/app/build/
+android/.gradle/
+android/build/

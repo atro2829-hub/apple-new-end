@@ -2,12 +2,18 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, BellRing, X, CheckCircle, Camera, MapPin, Shield } from "lucide-react";
+import { Bell, BellRing, X, CheckCircle, Camera, MapPin, Shield, HardDrive, Vibrate } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { requestNotificationPermission, getNotificationPermission } from "@/lib/notifications";
 import { useLanguage } from "@/context/LanguageContext";
 
 const DISMISSED_KEY = "applenet_perms_dismissed";
+
+// Check if running inside Capacitor native app
+const isNative = () => {
+  if (typeof window === "undefined") return false;
+  return !!(window as unknown as Record<string, unknown>).Capacitor;
+};
 
 export function PermissionModal() {
   const { t, isRTL } = useLanguage();
@@ -16,6 +22,8 @@ export function PermissionModal() {
   const [notifStatus, setNotifStatus] = useState<"idle" | "granted" | "denied" | "loading">("idle");
   const [cameraStatus, setCameraStatus] = useState<"idle" | "granted" | "denied" | "loading">("idle");
   const [locationStatus, setLocationStatus] = useState<"idle" | "granted" | "denied" | "loading">("idle");
+  const [storageStatus, setStorageStatus] = useState<"idle" | "granted" | "denied" | "loading">("idle");
+  const [vibrateStatus, setVibrateStatus] = useState<"idle" | "granted" | "denied" | "loading">("idle");
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -50,16 +58,46 @@ export function PermissionModal() {
     // 3) Request location permission
     setLocationStatus("loading");
     try {
-      await new Promise<void>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(
-          () => resolve(),
-          () => reject(new Error("Location denied")),
-          { timeout: 5000 }
-        );
-      });
-      setLocationStatus("granted");
+      if (isNative()) {
+        const { Geolocation } = await import("@capacitor/geolocation");
+        await Geolocation.requestPermissions();
+        setLocationStatus("granted");
+      } else {
+        await new Promise<void>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(
+            () => resolve(),
+            () => reject(new Error("Location denied")),
+            { timeout: 5000 }
+          );
+        });
+        setLocationStatus("granted");
+      }
     } catch {
       setLocationStatus("denied");
+    }
+
+    // 4) Request storage permission (native only)
+    setStorageStatus("loading");
+    try {
+      if (isNative()) {
+        const { Filesystem } = await import("@capacitor/filesystem");
+        await Filesystem.requestPermissions();
+      }
+      setStorageStatus("granted");
+    } catch {
+      setStorageStatus("denied");
+    }
+
+    // 5) Test vibration/haptics permission (native only)
+    setVibrateStatus("loading");
+    try {
+      if (isNative()) {
+        const { Haptics } = await import("@capacitor/haptics");
+        await Haptics.impact({ style: "LIGHT" });
+      }
+      setVibrateStatus("granted");
+    } catch {
+      setVibrateStatus("denied");
     }
 
     setTimeout(() => {
@@ -72,7 +110,7 @@ export function PermissionModal() {
     setShow(false);
   };
 
-  const isProcessing = notifStatus === "loading" || cameraStatus === "loading" || locationStatus === "loading";
+  const isProcessing = notifStatus === "loading" || cameraStatus === "loading" || locationStatus === "loading" || storageStatus === "loading" || vibrateStatus === "loading";
 
   return (
     <AnimatePresence>
@@ -130,6 +168,20 @@ export function PermissionModal() {
                     desc={t("permissions2.locationDesc")}
                     status={locationStatus}
                     bgColor="bg-orange-50 dark:bg-orange-900/30"
+                  />
+                  <PermissionItem
+                    icon={<HardDrive className="w-5 h-5 text-purple-500" />}
+                    title={t("permissions2.storage")}
+                    desc={t("permissions2.storageDesc")}
+                    status={storageStatus}
+                    bgColor="bg-purple-50 dark:bg-purple-900/30"
+                  />
+                  <PermissionItem
+                    icon={<Vibrate className="w-5 h-5 text-rose-500" />}
+                    title={t("permissions2.vibration")}
+                    desc={t("permissions2.vibrationDesc")}
+                    status={vibrateStatus}
+                    bgColor="bg-rose-50 dark:bg-rose-900/30"
                   />
                 </div>
 
