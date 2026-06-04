@@ -1,0 +1,682 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 0.625rem;
+
+  /* ====== Apple.NET Brand Colors ====== */
+  --apple-primary: #1B7A3D;        /* Dark Green - Primary buttons, active states, CTAs, headers */
+  --apple-primary-hover: #165E30;   /* Hover dark green */
+  --apple-primary-active: #134D28;  /* Active/pressed dark green */
+  --apple-secondary-green: #22A24D; /* Medium green - Hover states, secondary green */
+  --apple-light-green: #E8F5E9;     /* Light green backgrounds */
+  --apple-green-shadow: rgba(27, 122, 61, 0.3);   /* Button shadow */
+  --apple-green-shadow-hover: rgba(27, 122, 61, 0.4); /* Button shadow hover */
+
+  /* ====== shadcn/ui Theme Tokens ====== */
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.448 0.14 155);           /* Mapped to #1B7A3D green */
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.448 0.14 155);               /* Mapped to #1B7A3D green */
+  --chart-1: oklch(0.448 0.14 155);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.448 0.14 155);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.448 0.14 155);
+}
+
+/* ====== APK App Shell Styles ====== */
+
+/* Prevent pull-to-refresh and overscroll bounce like a native app */
+html, body {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
+  scroll-behavior: smooth;
+}
+
+/* Allow text selection in input areas */
+input, textarea, [contenteditable] {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* App-like body: no bouncy scroll */
+body {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  touch-action: manipulation;
+}
+
+/* Make the app container fill the screen */
+#app-shell {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Scrollable content area inside the app shell */
+#app-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  scroll-behavior: smooth;
+}
+
+/* ====== Custom Scrollbar Styles ====== */
+
+/* Hide all scrollbars for native app feel */
+*::-webkit-scrollbar {
+  display: none !important;
+}
+* {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+/* Visible custom scrollbar for specific areas */
+.visible-scroll::-webkit-scrollbar {
+  display: block !important;
+  width: 4px !important;
+}
+.visible-scroll::-webkit-scrollbar-track {
+  background: transparent !important;
+  margin: 4px 0;
+}
+.visible-scroll::-webkit-scrollbar-thumb {
+  background: rgba(27, 122, 61, 0.2) !important;
+  border-radius: 4px !important;
+}
+.visible-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(27, 122, 61, 0.4) !important;
+}
+.visible-scroll {
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(27, 122, 61, 0.2) transparent !important;
+}
+
+/* Custom scrollbar for admin panel only - visible */
+.admin-scroll::-webkit-scrollbar {
+  display: block !important;
+  width: 4px !important;
+}
+.admin-scroll::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+.admin-scroll::-webkit-scrollbar-thumb {
+  background: rgba(27, 122, 61, 0.25) !important;
+  border-radius: 4px !important;
+}
+
+/* ====== iOS Safe Area Handling ====== */
+
+@supports (padding-top: env(safe-area-inset-top)) {
+  .safe-top { padding-top: env(safe-area-inset-top); }
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+  .safe-left { padding-left: env(safe-area-inset-left); }
+  .safe-right { padding-right: env(safe-area-inset-right); }
+  /* Comprehensive safe area for full-screen elements */
+  .safe-all {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  /* Bottom navigation safe area */
+  .app-bottom-nav {
+    padding-bottom: max(env(safe-area-inset-bottom), 6px);
+  }
+}
+
+/* Fallback for non-notch devices */
+@supports not (padding-top: env(safe-area-inset-top)) {
+  .safe-top { padding-top: 0; }
+  .safe-bottom { padding-bottom: 0; }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ====== Loading Skeleton Animations ====== */
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e0e0e0 37%,
+    #f0f0f0 63%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.skeleton-shimmer-green {
+  background: linear-gradient(
+    90deg,
+    #E8F5E9 25%,
+    #C8E6C9 37%,
+    #E8F5E9 63%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Pulse animation for loading */
+@keyframes greenPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+.animate-green-pulse {
+  animation: greenPulse 2s ease-in-out infinite;
+}
+
+/* ====== Splash Screen Animations ====== */
+
+@keyframes splashFade {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 0; transform: scale(1.1); }
+}
+.splash-fade {
+  animation: splashFade 1.2s ease-out forwards;
+}
+
+/* Progress bar for splash */
+@keyframes progressFill {
+  0% { width: 0%; }
+  30% { width: 30%; }
+  60% { width: 65%; }
+  80% { width: 85%; }
+  100% { width: 100%; }
+}
+.splash-progress {
+  animation: progressFill 2s ease-in-out forwards;
+}
+
+/* Shimmer effect for splash */
+@keyframes shimmerMove {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.splash-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
+  animation: shimmerMove 1.5s ease-in-out infinite;
+}
+
+/* ====== Glassmorphism Effect ====== */
+
+.glass {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(27, 122, 61, 0.12);
+}
+
+/* ====== iOS-style Card Shadows ====== */
+
+.card-shadow {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.card-shadow-lg {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* ====== Green Gradient Button Shadow ====== */
+
+.btn-green-shadow {
+  box-shadow: 0 2px 8px rgba(27, 122, 61, 0.3);
+}
+
+.btn-green-shadow:hover {
+  box-shadow: 0 4px 12px rgba(27, 122, 61, 0.4);
+}
+
+/* ====== Page Transitions ====== */
+
+.page-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* iOS-style bottom nav indicator */
+.nav-indicator {
+  position: relative;
+}
+.nav-indicator::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 3px;
+  border-radius: 2px;
+  background: #1B7A3D;
+}
+
+/* ====== Touch Feedback Animations ====== */
+
+/* App-like touch feedback */
+.tap-feedback {
+  transition: transform 0.1s ease, opacity 0.1s ease;
+}
+.tap-feedback:active {
+  transform: scale(0.96);
+  opacity: 0.8;
+}
+
+/* Enhanced haptic press with subtle color shift */
+@keyframes hapticPress {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+.haptic-press:active {
+  transform: scale(0.97);
+}
+
+/* Ripple effect for touch */
+.touch-ripple {
+  position: relative;
+  overflow: hidden;
+}
+.touch-ripple::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(27, 122, 61, 0.15) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.touch-ripple:active::after {
+  opacity: 1;
+}
+
+/* ====== Bottom Sheet Styles ====== */
+
+/* Bottom sheet drag handle */
+.drag-handle {
+  width: 36px;
+  height: 5px;
+  border-radius: 3px;
+  background: #d1d5db;
+}
+
+/* ====== App Shell Blur Effects ====== */
+
+/* App header blur effect */
+.app-header {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+/* Bottom nav blur effect */
+.app-bottom-nav {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+/* ====== Page Slide Animations ====== */
+
+@keyframes slideInRight {
+  from { transform: translateX(-30px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes slideInLeft {
+  from { transform: translateX(30px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* ====== Print Styles ====== */
+
+@media print {
+  /* Hide app shell elements when printing */
+  #app-shell .app-header,
+  #app-shell .app-bottom-nav,
+  #app-shell .app-admin-fab,
+  .no-print {
+    display: none !important;
+  }
+  
+  /* Make body scrollable for print */
+  body {
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  
+  /* Make content area scrollable */
+  #app-shell {
+    position: static !important;
+    overflow: visible !important;
+  }
+  
+  #app-content {
+    overflow: visible !important;
+    flex: none !important;
+  }
+  
+  /* Basic print styling */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+/* ====== PWA Standalone Mode Adjustments ====== */
+
+@media (display-mode: standalone) {
+  /* Add safe area padding for standalone mode */
+  .app-header {
+    padding-top: env(safe-area-inset-top, 0);
+  }
+  .app-bottom-nav {
+    padding-bottom: max(env(safe-area-inset-bottom, 0), 8px);
+  }
+}
+
+/* ====== Focus Styles for Accessibility ====== */
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #1B7A3D;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ====== Reduced Motion ====== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ====================================================
+   DARK THEME — All Pages & Components
+   ==================================================== */
+
+.dark {
+  color-scheme: dark;
+
+  /* shadcn/ui dark tokens */
+  --background: oklch(0.13 0 0);
+  --foreground: oklch(0.97 0 0);
+  --card: oklch(0.18 0 0);
+  --card-foreground: oklch(0.97 0 0);
+  --popover: oklch(0.18 0 0);
+  --popover-foreground: oklch(0.97 0 0);
+  --primary: oklch(0.52 0.14 155);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.25 0 0);
+  --secondary-foreground: oklch(0.97 0 0);
+  --muted: oklch(0.25 0 0);
+  --muted-foreground: oklch(0.65 0 0);
+  --accent: oklch(0.25 0 0);
+  --accent-foreground: oklch(0.97 0 0);
+  --destructive: oklch(0.65 0.22 22);
+  --border: oklch(0.28 0 0);
+  --input: oklch(0.28 0 0);
+  --ring: oklch(0.52 0.14 155);
+  --chart-1: oklch(0.52 0.14 155);
+  --chart-2: oklch(0.6 0.12 185);
+  --chart-3: oklch(0.5 0.1 230);
+  --chart-4: oklch(0.8 0.18 85);
+  --chart-5: oklch(0.75 0.19 70);
+  --sidebar: oklch(0.18 0 0);
+  --sidebar-foreground: oklch(0.97 0 0);
+  --sidebar-primary: oklch(0.52 0.14 155);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.25 0 0);
+  --sidebar-accent-foreground: oklch(0.97 0 0);
+  --sidebar-border: oklch(0.28 0 0);
+  --sidebar-ring: oklch(0.52 0.14 155);
+
+  /* Apple.NET dark brand overrides */
+  --apple-light-green: rgba(27, 122, 61, 0.18);
+}
+
+/* ── Base Layer ─────────────────────────────────────── */
+.dark body,
+.dark #app-shell {
+  background-color: #0f172a;
+  color: #f1f5f9;
+}
+
+/* ── Backgrounds ────────────────────────────────────── */
+.dark .bg-white          { background-color: #1e293b !important; }
+.dark .bg-gray-50        { background-color: #0f172a !important; }
+.dark .bg-gray-100       { background-color: #1e293b !important; }
+.dark .bg-gray-200       { background-color: #334155 !important; }
+.dark .bg-\[\#E8F5E9\]  { background-color: rgba(27,122,61,0.18) !important; }
+.dark .bg-\[\#F0FFF4\]  { background-color: rgba(27,122,61,0.12) !important; }
+.dark .from-\[\#E8F5E9\] { --tw-gradient-from: rgba(27,122,61,0.18) !important; }
+.dark .to-\[\#F0FFF4\]  { --tw-gradient-to: rgba(27,122,61,0.12) !important; }
+
+/* Cards / elevated surfaces */
+.dark .rounded-2xl.bg-white,
+.dark .rounded-3xl.bg-white,
+.dark .rounded-xl.bg-white {
+  background-color: #1e293b !important;
+}
+
+/* ── Text Colors ────────────────────────────────────── */
+.dark .text-gray-900  { color: #f1f5f9 !important; }
+.dark .text-gray-800  { color: #e2e8f0 !important; }
+.dark .text-gray-700  { color: #cbd5e1 !important; }
+.dark .text-gray-600  { color: #94a3b8 !important; }
+.dark .text-gray-500  { color: #64748b !important; }
+.dark .text-gray-400  { color: #475569 !important; }
+.dark .text-gray-300  { color: #334155 !important; }
+.dark .text-gray-200  { color: #1e293b !important; }
+.dark .text-\[\#1a1a1a\] { color: #f1f5f9 !important; }
+.dark .text-black     { color: #f1f5f9 !important; }
+
+/* ── Borders ────────────────────────────────────────── */
+.dark .border-gray-50   { border-color: #0f172a !important; }
+.dark .border-gray-100  { border-color: #1e293b !important; }
+.dark .border-gray-100\/50 { border-color: rgba(30,41,59,0.5) !important; }
+.dark .border-gray-200  { border-color: #334155 !important; }
+.dark .border-gray-300  { border-color: #475569 !important; }
+.dark .border-\[\#E8F5E9\] { border-color: rgba(27,122,61,0.25) !important; }
+.dark .border-\[\#1B7A3D\]\/10 { border-color: rgba(27,122,61,0.25) !important; }
+
+/* ── Shadows ────────────────────────────────────────── */
+.dark .shadow-sm   { box-shadow: 0 1px 3px rgba(0,0,0,0.6) !important; }
+.dark .shadow-md   { box-shadow: 0 4px 6px rgba(0,0,0,0.6) !important; }
+.dark .shadow-lg   { box-shadow: 0 10px 15px rgba(0,0,0,0.6) !important; }
+.dark .shadow-xl   { box-shadow: 0 20px 25px rgba(0,0,0,0.6) !important; }
+.dark .shadow-2xl  { box-shadow: 0 25px 50px rgba(0,0,0,0.7) !important; }
+.dark .card-shadow { box-shadow: 0 2px 8px rgba(0,0,0,0.5) !important; }
+.dark .card-shadow-lg { box-shadow: 0 4px 16px rgba(0,0,0,0.6) !important; }
+
+/* ── App Shell ──────────────────────────────────────── */
+.dark .app-header {
+  background: rgba(15,23,42,0.92) !important;
+  border-color: rgba(51,65,85,0.5) !important;
+}
+.dark .app-bottom-nav {
+  background: rgba(15,23,42,0.92) !important;
+  border-color: rgba(51,65,85,0.5) !important;
+}
+
+/* ── Splash Screen ──────────────────────────────────── */
+.dark .splash-bg { background-color: #0f172a; }
+
+/* ── Side Menu ──────────────────────────────────────── */
+.dark .fixed.bg-white.z-\[101\] { background-color: #1e293b !important; }
+
+/* ── Form Inputs ────────────────────────────────────── */
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: #334155 !important;
+  border-color: #475569 !important;
+  color: #f1f5f9 !important;
+}
+.dark input::placeholder,
+.dark textarea::placeholder { color: #64748b !important; }
+
+/* ── Glassmorphism ──────────────────────────────────── */
+.dark .glass {
+  background: rgba(30,41,59,0.75) !important;
+  border-color: rgba(27,122,61,0.15) !important;
+}
+
+/* ── Toaster ────────────────────────────────────────── */
+.dark [data-sonner-toast] {
+  background: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f1f5f9 !important;
+}
+
+/* ── Drag handle ────────────────────────────────────── */
+.dark .drag-handle { background: #334155 !important; }
+
+/* ── Status indicators ──────────────────────────────── */
+.dark .bg-red-50   { background-color: rgba(239,68,68,0.12) !important; }
+.dark .bg-blue-50  { background-color: rgba(59,130,246,0.12) !important; }
+.dark .bg-amber-50 { background-color: rgba(245,158,11,0.12) !important; }
+.dark .bg-orange-50 { background-color: rgba(249,115,22,0.12) !important; }
+.dark .bg-purple-50 { background-color: rgba(168,85,247,0.12) !important; }
+
+.dark .text-red-500   { color: #f87171 !important; }
+.dark .text-blue-500  { color: #60a5fa !important; }
+.dark .text-amber-500 { color: #fbbf24 !important; }
+.dark .text-orange-500 { color: #fb923c !important; }
+.dark .text-purple-500 { color: #c084fc !important; }
+.dark .text-red-400   { color: #f87171 !important; }
+
+/* ── Overlay / modal backdrops ──────────────────────── */
+.dark .bg-black\/40  { background-color: rgba(0,0,0,0.65) !important; }
+.dark .bg-black\/50  { background-color: rgba(0,0,0,0.75) !important; }
+
+/* ── Green gradient buttons (keep as-is) ────────────── */
+.dark .bg-gradient-to-l.from-\[\#1B7A3D\] { opacity: 1; }
+.dark .btn-green-shadow {
+  box-shadow: 0 2px 12px rgba(27,122,61,0.4) !important;
+}
+
+/* ── Progress / loading bars ────────────────────────── */
+.dark .bg-gray-100.rounded-full { background-color: #334155 !important; }
+
+/* ── NotificationCenter ─────────────────────────────── */
+.dark [data-notification-panel] { background-color: #1e293b !important; }
+
+/* ── Admin float button overlay ─────────────────────── */
+.dark .fixed.bottom-24.left-4.bg-\[\#1B7A3D\] { box-shadow: 0 4px 12px rgba(27,122,61,0.5) !important; }
+
+/* ── LTR / English layout adjustments ───────────────── */
+html[dir="ltr"] .app-header { direction: ltr; }
+html[dir="ltr"] .app-bottom-nav { direction: ltr; }
+html[dir="ltr"] nav .flex.items-center.justify-around { direction: ltr; }
