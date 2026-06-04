@@ -76,7 +76,7 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
   const [detailNetwork, setDetailNetwork] = useState<NetworkItem | null>(null);
 
   // Dynamic networks & tiers from Firebase
-  const [fbNetworks, setFbNetworks] = useState<NetworkItem[]>(DEFAULT_NETWORKS.map(n => ({ ...n, ownerId: null, ownerName: null, ownerPhone: null, location: null, provinceId: null, provinceName: null, district: null, exactLocation: null, connectionIP: null, createdAt: 0 })));
+  const [fbNetworks, setFbNetworks] = useState<NetworkItem[]>(DEFAULT_NETWORKS.map(n => ({ ...n, ownerId: null, ownerName: null, ownerPhone: null, location: null, provinceId: null, provinceName: null, district: null, exactLocation: null, connectionIP: null, createdAt: 0 } as NetworkItem)));
   const [fbTiers, setFbTiers] = useState<TierItem[]>(DEFAULT_TIERS.map(t => ({ ...t, id: t.tier, createdAt: 0 })));
 
   // User's province from Firebase
@@ -95,7 +95,7 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
   useEffect(() => {
     const unsub = onValue(ref(db, "cards"), (snap) => {
       const data = snap.val();
-      setCards(data ? Object.entries(data).map(([id, val]: [string, unknown]) => ({ id, ...(val as Record<string, unknown>) })) as CardItem[] : []);
+      setCards(data ? Object.entries(data).map(([id, val]: [string, unknown]) => ({ ...(val as Record<string, unknown>), id })) as CardItem[] : []);
     });
     return () => unsub();
   }, []);
@@ -134,7 +134,7 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
     const unsub = onValue(ref(db, "networks"), (snap) => {
       const data = snap.val();
       if (data) {
-        setFbNetworks(Object.entries(data).map(([id, val]: [string, unknown]) => ({ id, ...(val as Record<string, unknown>) })) as NetworkItem[]);
+        setFbNetworks(Object.entries(data).map(([id, val]: [string, unknown]) => ({ ...(val as Record<string, unknown>), id })) as NetworkItem[]);
       }
     });
     return () => unsub();
@@ -144,7 +144,7 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
     const unsub = onValue(ref(db, "tiers"), (snap) => {
       const data = snap.val();
       if (data) {
-        setFbTiers(Object.entries(data).map(([id, val]: [string, unknown]) => ({ id, ...(val as Record<string, unknown>) })) as TierItem[]);
+        setFbTiers(Object.entries(data).map(([id, val]: [string, unknown]) => ({ ...(val as Record<string, unknown>), id })) as TierItem[]);
       }
     });
     return () => unsub();
@@ -152,7 +152,7 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
 
   // ===== Computed data =====
 
-  const availableCards = useMemo(() => cards.filter(c => !c.isUsed && (c as Record<string, unknown>).status !== "expired" && (c as Record<string, unknown>).status !== "archived"), [cards]);
+  const availableCards = useMemo(() => cards.filter(c => !c.isUsed && (c as unknown as Record<string, unknown>).status !== "expired" && (c as unknown as Record<string, unknown>).status !== "archived"), [cards]);
 
   // Filter networks by province AND district AND search AND network filter chip
   const filteredNetworks = useMemo(() => {
@@ -221,11 +221,11 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
         .filter(([_, c]) => {
           if (c.network !== networkId || c.tier !== tier || c.isUsed) return false;
           // Respect card status lifecycle
-          const status = (c as Record<string, unknown>).status;
+          const status = (c as unknown as Record<string, unknown>).status;
           if (status === "expired" || status === "archived") return false;
           return true;
         })
-        .map(([id, c]) => ({ id, ...c }));
+        .map(([id, c]) => ({ ...c, id }));
 
       if (available.length === 0) {
         toast.error(t("cards2.noCardsInCategory"));
@@ -657,7 +657,7 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
                       <div className="absolute -bottom-2 -right-2 w-14 h-14 rounded-full opacity-10" style={{ backgroundColor: net.color }} />
                       <div className="relative flex items-start gap-3">
                         <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-sm shrink-0" style={{ backgroundColor: net.color + "25" }}>
-                          {(net as Record<string, unknown>).imageBase64 ? <img src={(net as Record<string, unknown>).imageBase64 as string} className="w-12 h-12 rounded-xl object-cover" alt={net.name} /> : <span>{net.emoji}</span>}
+                          {(net as unknown as Record<string, unknown>).imageBase64 ? <img src={(net as unknown as Record<string, unknown>).imageBase64 as string} className="w-12 h-12 rounded-xl object-cover" alt={net.name} /> : <span>{net.emoji}</span>}
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="text-base font-black" style={{ color: net.color }}>{net.name}</h3>
@@ -736,7 +736,7 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
                         <div className="absolute -bottom-2 -right-2 w-14 h-14 rounded-full opacity-10" style={{ backgroundColor: net.color }} />
                         <div className="relative flex items-start gap-3">
                           <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-sm shrink-0" style={{ backgroundColor: net.color + "25" }}>
-                            {(net as Record<string, unknown>).imageBase64 ? <img src={(net as Record<string, unknown>).imageBase64 as string} className="w-12 h-12 rounded-xl object-cover" alt={net.name} /> : <span>{net.emoji}</span>}
+                            {(net as unknown as Record<string, unknown>).imageBase64 ? <img src={(net as unknown as Record<string, unknown>).imageBase64 as string} className="w-12 h-12 rounded-xl object-cover" alt={net.name} /> : <span>{net.emoji}</span>}
                           </div>
                           <div className="flex-1 min-w-0">
                             <h3 className="text-base font-black" style={{ color: net.color }}>{net.name}</h3>
@@ -818,9 +818,9 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
                       className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-sm shrink-0"
                       style={{ backgroundColor: net.color + "25" }}
                     >
-                      {(net as Record<string, unknown>).imageBase64 ? (
+                      {(net as unknown as Record<string, unknown>).imageBase64 ? (
                         <img
-                          src={(net as Record<string, unknown>).imageBase64 as string}
+                          src={(net as unknown as Record<string, unknown>).imageBase64 as string}
                           className="w-12 h-12 rounded-xl object-cover"
                           alt={net.name}
                         />

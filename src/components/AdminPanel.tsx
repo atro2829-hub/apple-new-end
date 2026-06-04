@@ -27,7 +27,8 @@ import {
   AppUser, CardItem, BankDetail, Advertisement, SimCard, DepositRequest,
   NetworkItem, TierItem, RedeemCode, SubscriptionPlan, UserSubscription,
   BulkNotification, StarlinkProduct, StarlinkOrder, SharedRedeemCode,
-  CommissionSetting, CommissionEntry, MonthlyPayout, CardSaleLocation
+  CommissionSetting, CommissionEntry, MonthlyPayout, CardSaleLocation,
+  NetworkSubmission
 } from "@/lib/types";
 import jsPDF from "jspdf";
 import { useLanguage } from "@/context/LanguageContext";
@@ -372,36 +373,36 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
   }, []);
 
   // ─── Derived lists ─────────────────────────────────────────
-  const usersList = Object.entries(allUsers).map(([id, val]) => ({ id, ...val }));
-  const cardsList = Object.entries(allCards).map(([id, val]) => ({ id, ...val }));
-  const banksList = Object.entries(allBanks).map(([id, val]) => ({ id, ...val }));
-  const adsList = Object.entries(allAds).map(([id, val]) => ({ id, ...val }));
-  const simsList = Object.entries(allSims).map(([id, val]) => ({ id, ...val }));
-  const depositsList = Object.entries(allDeposits).map(([id, val]) => ({ id, ...val })).sort((a: DepositRequest, b: DepositRequest) => (b.createdAt || 0) - (a.createdAt || 0));
+  const usersList = Object.entries(allUsers).map(([id, val]) => ({ ...val, id }));
+  const cardsList = Object.entries(allCards).map(([id, val]) => ({ ...val, id }));
+  const banksList = Object.entries(allBanks).map(([id, val]) => ({ ...val, id }));
+  const adsList = Object.entries(allAds).map(([id, val]) => ({ ...val, id }));
+  const simsList = Object.entries(allSims).map(([id, val]) => ({ ...val, id }));
+  const depositsList = Object.entries(allDeposits).map(([id, val]) => ({ ...val, id })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   const pendingDeposits = depositsList.filter(d => d.status === "pending");
-  const redeemCodesList = Object.entries(allRedeemCodes).map(([id, val]) => ({ id, ...val })).sort((a: RedeemCode, b: RedeemCode) => (b.createdAt || 0) - (a.createdAt || 0));
-  const sharedCodesList = Object.entries(allSharedRedeemCodes).map(([id, val]) => ({ id, ...val }));
-  const plansList = Object.entries(subscriptionPlans).map(([id, val]) => ({ id, ...val }));
-  const subsList = Object.entries(userSubscriptions).map(([id, val]) => ({ id, ...val }));
-  const bulkNotifList = Object.entries(allBulkNotifications).map(([id, val]) => ({ id, ...val })).sort((a: BulkNotification, b: BulkNotification) => (b.sentAt || 0) - (a.sentAt || 0));
-  const starProductsList = Object.entries(allStarlinkProducts).map(([id, val]) => ({ id, ...val }));
-  const starOrdersList = Object.entries(allStarlinkOrders).map(([id, val]) => ({ id, ...val })).sort((a: StarlinkOrder, b: StarlinkOrder) => (b.createdAt || 0) - (a.createdAt || 0));
-  const commSettingsList = Object.entries(allCommissionSettings).map(([id, val]) => ({ id, ...val }));
-  const commEntriesList = Object.entries(allCommissionEntries).map(([id, val]) => ({ id, ...val })).sort((a: CommissionEntry, b: CommissionEntry) => (b.soldAt || 0) - (a.soldAt || 0));
-  const payoutList = Object.entries(allMonthlyPayouts).map(([id, val]) => ({ id, ...val }));
+  const redeemCodesList = Object.entries(allRedeemCodes).map(([id, val]) => ({ ...val, id })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  const sharedCodesList = Object.entries(allSharedRedeemCodes).map(([id, val]) => ({ ...val, id }));
+  const plansList = Object.entries(subscriptionPlans).map(([id, val]) => ({ ...val, id }));
+  const subsList = Object.entries(userSubscriptions).map(([id, val]) => ({ ...val, id }));
+  const bulkNotifList = Object.entries(allBulkNotifications).map(([id, val]) => ({ ...val, id })).sort((a, b) => (b.sentAt || 0) - (a.sentAt || 0));
+  const starProductsList = Object.entries(allStarlinkProducts).map(([id, val]) => ({ ...val, id }));
+  const starOrdersList = Object.entries(allStarlinkOrders).map(([id, val]) => ({ ...val, id })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  const commSettingsList = Object.entries(allCommissionSettings).map(([id, val]) => ({ ...val, id }));
+  const commEntriesList = Object.entries(allCommissionEntries).map(([id, val]) => ({ ...val, id })).sort((a, b) => (b.soldAt || 0) - (a.soldAt || 0));
+  const payoutList = Object.entries(allMonthlyPayouts).map(([id, val]) => ({ ...val, id }));
 
-  const networkSubmissionsList = Object.entries(allNetworkSubmissions).map(([id, val]) => ({ id, ...val })).sort((a: NetworkSubmission, b: NetworkSubmission) => (b.createdAt || 0) - (a.createdAt || 0));
+  const networkSubmissionsList = Object.entries(allNetworkSubmissions).map(([id, val]) => ({ ...val, id })).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   const pendingNetworkSubmissions = networkSubmissionsList.filter(s => s.status === "pending");
   const approvedNetworkSubmissions = networkSubmissionsList.filter(s => s.status === "approved");
   const rejectedNetworkSubmissions = networkSubmissionsList.filter(s => s.status === "rejected");
 
   const networksList = Object.keys(fbNetworks).length > 0
-    ? Object.entries(fbNetworks).map(([id, val]) => ({ id, ...val }))
-    : DEFAULT_NETWORKS.map(n => ({ ...n, ownerId: null, ownerName: null, createdAt: 0 }));
+    ? Object.entries(fbNetworks).map(([id, val]) => ({ ...val, id }))
+    : DEFAULT_NETWORKS.map(n => ({ ...n, ownerId: null, ownerName: null, createdAt: 0 } as NetworkItem));
 
   const tiersList = Object.keys(fbTiers).length > 0
-    ? Object.entries(fbTiers).map(([id, val]) => ({ id, ...val }))
-    : DEFAULT_TIERS.map(t => ({ ...t, id: t.tier, createdAt: 0 }));
+    ? Object.entries(fbTiers).map(([id, val]) => ({ ...val, id }))
+    : DEFAULT_TIERS.map(t => ({ ...t, id: t.tier, createdAt: 0 } as TierItem & { id: string }));
 
   const filteredUsers = userSearch
     ? usersList.filter(u => (u.displayName || "").includes(userSearch) || (u.email || "").includes(userSearch) || (u.phone || "").includes(userSearch))
@@ -2035,7 +2036,7 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
                               {net.imageBase64 ? (
                                 <img src={net.imageBase64} alt="" className="w-10 h-10 rounded-xl object-cover" />
                               ) : (
-                                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg" style={{ backgroundColor: (net as Record<string, unknown>).bgColor as string || "#E8F5E9" }}>{(net as Record<string, unknown>).emoji as string || "📶"}</div>
+                                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg" style={{ backgroundColor: (net as unknown as Record<string, unknown>).bgColor as string || "#E8F5E9" }}>{(net as unknown as Record<string, unknown>).emoji as string || "📶"}</div>
                               )}
                               <div>
                                 <p className="text-sm font-bold text-gray-900">{net.name}</p>
@@ -3108,9 +3109,9 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
                       <div key={net.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
                         <div className="p-4 border-b border-gray-50 flex items-center justify-between">
                           <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-lg flex items-center justify-center text-sm overflow-hidden" style={{ backgroundColor: (net as Record<string, unknown>).bgColor as string || net.color + "1A" }}>
-                              {(net as Record<string, unknown>).imageBase64 ? (
-                                <img src={(net as Record<string, unknown>).imageBase64 as string} alt={net.name} className="w-6 h-6 rounded-md object-cover" />
+                            <div className="w-7 h-7 rounded-lg flex items-center justify-center text-sm overflow-hidden" style={{ backgroundColor: (net as unknown as Record<string, unknown>).bgColor as string || net.color + "1A" }}>
+                              {(net as unknown as Record<string, unknown>).imageBase64 ? (
+                                <img src={(net as unknown as Record<string, unknown>).imageBase64 as string} alt={net.name} className="w-6 h-6 rounded-md object-cover" />
                               ) : (
                                 <span>{net.emoji}</span>
                               )}

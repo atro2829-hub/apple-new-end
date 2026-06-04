@@ -42,10 +42,10 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
     const unsub = onValue(ref(db, "starlinkProducts"), (snap) => {
       const data = snap.val();
       if (data) {
-        const list = Object.entries(data)
-          .map(([id, val]: [string, unknown]) => ({ id, ...(val as Record<string, unknown>) }))
-          .filter((p: Record<string, unknown>) => p.isActive)
-          .sort((a: StarlinkProduct, b: StarlinkProduct) => a.priceUSD - b.priceUSD) as StarlinkProduct[];
+        const list = (Object.entries(data)
+          .map(([id, val]: [string, unknown]) => ({ ...(val as Record<string, unknown>), id })) as StarlinkProduct[])
+          .filter((p) => p.isActive)
+          .sort((a, b) => a.priceUSD - b.priceUSD);
         setProducts(list);
       } else {
         setProducts([]);
@@ -69,10 +69,10 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
       const unsub = onValue(ref(db, "starlinkOrders"), (snap) => {
         const data = snap.val();
         if (data) {
-          const list = Object.entries(data)
-            .map(([id, val]: [string, unknown]) => ({ id, ...(val as Record<string, unknown>) }))
-            .filter((o: Record<string, unknown>) => o.userId === user.uid)
-            .sort((a: StarlinkOrder, b: StarlinkOrder) => (b.createdAt || 0) - (a.createdAt || 0)) as StarlinkOrder[];
+          const list = (Object.entries(data)
+            .map(([id, val]: [string, unknown]) => ({ ...(val as Record<string, unknown>), id })) as StarlinkOrder[])
+            .filter((o) => o.userId === user.uid)
+            .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
           setUserOrders(list);
         } else {
           setUserOrders([]);
@@ -239,9 +239,9 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
             >
               {/* Product Image */}
               <div className="w-full h-40 bg-gray-50 relative overflow-hidden">
-                {(product as Record<string, unknown>).imageBase64 ? (
+                {(product as unknown as Record<string, unknown>).imageBase64 ? (
                   <img
-                    src={(product as Record<string, unknown>).imageBase64 as string}
+                    src={(product as unknown as Record<string, unknown>).imageBase64 as string}
                     alt={product.name}
                     className="w-full h-full object-cover"
                   />
@@ -404,10 +404,10 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
                         </div>
 
                         {/* Notes */}
-                        {(order as Record<string, unknown>).notes && (
+                        {!!(order as unknown as Record<string, unknown>).notes && (
                           <div className="mt-2 bg-gray-50 rounded-lg p-2 flex items-start gap-1.5">
                             <FileText className="w-3 h-3 text-gray-400 mt-0.5 flex-shrink-0" />
-                            <p className="text-[10px] text-gray-500">{(order as Record<string, unknown>).notes as string}</p>
+                            <p className="text-[10px] text-gray-500">{(order as unknown as Record<string, unknown>).notes as string}</p>
                           </div>
                         )}
                       </motion.div>
@@ -471,8 +471,8 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
               <div className="overflow-y-auto flex-1 px-5 py-4">
                 {/* Product Image */}
                 <div className="w-full h-48 rounded-2xl overflow-hidden mb-4 bg-gray-50">
-                  {(selectedProduct as Record<string, unknown>)?.imageBase64 ? (
-                    <img src={(selectedProduct as Record<string, unknown>).imageBase64 as string} alt={selectedProduct.name} className="w-full h-full object-cover" />
+                  {(selectedProduct as unknown as Record<string, unknown>)?.imageBase64 ? (
+                    <img src={(selectedProduct as unknown as Record<string, unknown>).imageBase64 as string} alt={selectedProduct.name} className="w-full h-full object-cover" />
                   ) : selectedProduct.imageUrl ? (
                     <img src={selectedProduct.imageUrl} alt={selectedProduct.name} className="w-full h-full object-cover" />
                   ) : (
@@ -604,8 +604,8 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
                 {/* Product Info */}
                 <div className="flex gap-3 mb-4 bg-gray-50 rounded-2xl p-3">
                   <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-white">
-                    {(selectedProduct as Record<string, unknown>)?.imageBase64 ? (
-                      <img src={(selectedProduct as Record<string, unknown>).imageBase64 as string} alt={selectedProduct.name} className="w-full h-full object-cover" />
+                    {(selectedProduct as unknown as Record<string, unknown>)?.imageBase64 ? (
+                      <img src={(selectedProduct as unknown as Record<string, unknown>).imageBase64 as string} alt={selectedProduct.name} className="w-full h-full object-cover" />
                     ) : selectedProduct.imageUrl ? (
                       <img src={selectedProduct.imageUrl} alt={selectedProduct.name} className="w-full h-full object-cover" />
                     ) : (

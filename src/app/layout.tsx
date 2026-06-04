@@ -33,7 +33,6 @@ export const metadata: Metadata = {
   description: "Professional hotspot management platform - شراء كروت إنترنت وإدارة رصيدك بسهولة وأمان | Buy internet cards and manage your balance with ease and security",
   manifest: "/manifest.json",
   applicationName: "Apple.NET",
-  appleMobileWebAppTitle: "Apple.NET",
   icons: {
     icon: [
       { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },

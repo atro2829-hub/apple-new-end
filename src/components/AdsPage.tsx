@@ -15,7 +15,7 @@ export function AdsPage() {
   useEffect(() => {
     const unsub = onValue(ref(db, "advertisements"), (snap) => {
       const data = snap.val();
-      if (data) setAds(Object.entries(data).map(([id, val]: [string, unknown]) => ({ id, ...(val as Record<string, unknown>) })).filter((a: Record<string, unknown>) => a.isActive) as Advertisement[]);
+      if (data) setAds(Object.entries(data).map(([id, val]: [string, unknown]) => ({ ...(val as Record<string, unknown>), id })).filter((a: Record<string, unknown>) => a.isActive) as Advertisement[]);
     });
     return () => unsub();
   }, []);

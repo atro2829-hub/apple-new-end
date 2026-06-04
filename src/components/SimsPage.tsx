@@ -16,7 +16,7 @@ export function SimsPage() {
   useEffect(() => {
     const unsub = onValue(ref(db, "simCards"), (snap) => {
       const data = snap.val();
-      if (data) setSims(Object.entries(data).map(([id, val]: [string, unknown]) => ({ id, ...(val as Record<string, unknown>) })).filter((s: Record<string, unknown>) => s.isAvailable) as SimCard[]);
+      if (data) setSims(Object.entries(data).map(([id, val]: [string, unknown]) => ({ ...(val as Record<string, unknown>), id })).filter((s: Record<string, unknown>) => s.isAvailable) as SimCard[]);
     });
     return () => unsub();
   }, []);

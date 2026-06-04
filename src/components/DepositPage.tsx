@@ -46,7 +46,7 @@ export function DepositPage({ user, onAuthClick }: DepositPageProps) {
     const unsub = onValue(ref(db, "bankDetails"), (snap) => {
       const data = snap.val();
       if (data) {
-        const list = Object.entries(data).map(([id, val]: [string, unknown]) => ({ id, ...(val as Record<string, unknown>) })).filter((b: Record<string, unknown>) => b.isActive) as BankDetail[];
+        const list = Object.entries(data).map(([id, val]: [string, unknown]) => ({ ...(val as Record<string, unknown>), id })).filter((b: Record<string, unknown>) => b.isActive) as BankDetail[];
         setBanks(list);
       }
     });
@@ -76,8 +76,8 @@ export function DepositPage({ user, onAuthClick }: DepositPageProps) {
       const unsub = onValue(userDepositsRef, (snap) => {
         const data = snap.val();
         if (data) {
-          const list = Object.entries(data).map(([id, val]: [string, unknown]) => ({ id, ...(val as Record<string, unknown>) }))
-            .sort((a: DepositRequest, b: DepositRequest) => (b.createdAt || 0) - (a.createdAt || 0)) as DepositRequest[];
+          const list = (Object.entries(data).map(([id, val]: [string, unknown]) => ({ ...(val as Record<string, unknown>), id })) as DepositRequest[])
+            .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
           setDepositRequests(list);
         } else {
           setDepositRequests([]);
@@ -459,7 +459,7 @@ export function DepositPage({ user, onAuthClick }: DepositPageProps) {
                       </div>
                       <div className="flex items-center justify-between text-xs text-gray-400 pt-1 border-t border-gray-50">
                         <span className="flex items-center gap-1"><Receipt className="w-3 h-3" />{t("deposit.refNum")}: {req.referenceNumber}</span>
-                        {(req as Record<string, unknown>).receiptImage && (
+                        {!!(req as unknown as Record<string, unknown>).receiptImage && (
                           <span className="flex items-center gap-0.5 text-[#1B7A3D]"><ImageIcon className="w-3 h-3" />{t("deposit.receiptAttached")}</span>
                         )}
                       </div>

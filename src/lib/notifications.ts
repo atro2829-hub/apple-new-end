@@ -79,7 +79,7 @@ export function showLocalNotification(options: {
       tag: options.tag || "applenet-notification",
       data: options.data || {},
       vibrate: [100, 50, 100],
-    });
+    } as NotificationOptions);
 
     if (options.onClick) {
       notification.onclick = () => {

@@ -17,7 +17,7 @@ export function BanksPage() {
   useEffect(() => {
     const unsub = onValue(ref(db, "bankDetails"), (snap) => {
       const data = snap.val();
-      if (data) setBanks(Object.entries(data).map(([id, val]: [string, unknown]) => ({ id, ...(val as Record<string, unknown>) })).filter((b: Record<string, unknown>) => b.isActive) as BankDetail[]);
+      if (data) setBanks(Object.entries(data).map(([id, val]: [string, unknown]) => ({ ...(val as Record<string, unknown>), id })).filter((b: Record<string, unknown>) => b.isActive) as BankDetail[]);
     });
     return () => unsub();
   }, []);

@@ -76,14 +76,14 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
     const netUnsub = onValue(ref(db, "networks"), (snap) => {
       const data = snap.val();
       if (data) {
-        setFbNetworks(Object.entries(data).map(([id, val]: [string, unknown]) => ({ id, ...(val as Record<string, unknown>) })) as NetworkItem[]);
+        setFbNetworks(Object.entries(data).map(([id, val]: [string, unknown]) => ({ ...(val as Record<string, unknown>), id })) as NetworkItem[]);
       }
     });
     unsubs.push(netUnsub);
     // Load cards
     const cardsUnsub = onValue(ref(db, "cards"), (snap) => {
       const data = snap.val();
-      setAllCards(data ? Object.entries(data).map(([id, val]: [string, unknown]) => ({ id, ...(val as Record<string, unknown>) })) as CardItem[] : []);
+      setAllCards(data ? Object.entries(data).map(([id, val]: [string, unknown]) => ({ ...(val as Record<string, unknown>), id })) as CardItem[] : []);
     });
     unsubs.push(cardsUnsub);
     // Load districts from settings
@@ -98,7 +98,7 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
       const unsub2 = onValue(ref(db, `credit/${user.uid}/history`), (snap) => {
         const data = snap.val();
         if (data) {
-          setHistory(Object.entries(data).map(([id, val]: [string, unknown]) => ({ id, ...(val as Record<string, unknown>) })).sort((a: CreditHistory, b: CreditHistory) => (b.date || 0) - (a.date || 0)) as CreditHistory[]);
+          setHistory((Object.entries(data).map(([id, val]: [string, unknown]) => ({ ...(val as Record<string, unknown>), id })) as CreditHistory[]).sort((a, b) => (b.date || 0) - (a.date || 0)));
         }
       });
       const unsub3 = onValue(ref(db, "settings/maxBalance"), (snap) => setMaxBalance(snap.val() || 0));
@@ -163,7 +163,7 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
     return () => unsubs.forEach(u => u());
   }, [user, t]);
 
-  const activePlans = Object.entries(plans).filter(([, p]) => p.isActive).map(([id, p]) => ({ id, ...p }));
+  const activePlans = Object.entries(plans).filter(([, p]) => p.isActive).map(([id, p]) => ({ ...p, id }));
 
   // normalizeCode is imported from @/lib/utils
 
@@ -703,8 +703,8 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
                         <div className="w-9 h-9 rounded-lg flex items-center justify-center text-base overflow-hidden" style={{ backgroundColor: net.bgColor || (net.color + "1A") }}>
-                          {(net as Record<string, unknown>).imageBase64 ? (
-                            <img src={(net as Record<string, unknown>).imageBase64 as string} alt={net.name} className="w-8 h-8 rounded-lg object-cover" />
+                          {(net as unknown as Record<string, unknown>).imageBase64 ? (
+                            <img src={(net as unknown as Record<string, unknown>).imageBase64 as string} alt={net.name} className="w-8 h-8 rounded-lg object-cover" />
                           ) : (
                             <span>{net.emoji}</span>
                           )}

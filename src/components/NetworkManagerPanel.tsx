@@ -182,19 +182,19 @@ export function NetworkManagerPanel({ onClose, managedNetwork }: NetworkManagerP
   }, [managedNetwork]);
 
   // ─── Derived data ──────────────────────────────────────────
-  const cardsList = Object.entries(cards).map(([id, val]) => ({ id, ...val }));
+  const cardsList = Object.entries(cards).map(([id, val]) => ({ ...val, id }));
   const availableCards = cardsList.filter(c => !c.isUsed);
   const soldCards = cardsList.filter(c => c.isUsed);
   const totalRevenue = soldCards.reduce((sum, c) => sum + (c.price || 0), 0);
 
   const tiersList = Object.keys(tiers).length > 0
-    ? Object.entries(tiers).map(([id, val]) => ({ id, ...val }))
-    : DEFAULT_TIERS.map(t => ({ ...t, id: t.tier, createdAt: 0 }));
+    ? Object.entries(tiers).map(([id, val]) => ({ ...val, id }))
+    : DEFAULT_TIERS.map(tier => ({ ...tier, id: tier.tier, createdAt: 0 }));
 
-  const networkTiersList = Object.entries(networkTiers).map(([id, val]) => ({ id, ...val })).sort((a, b) => a.price - b.price);
-  const allTiersList = [...tiersList, ...networkTiersList.filter(nt => !tiersList.some(t => t.tier === nt.tier))];
+  const networkTiersList = Object.entries(networkTiers).map(([id, val]) => ({ ...val, id })).sort((a, b) => a.price - b.price);
+  const allTiersList = [...tiersList, ...networkTiersList.filter(nt => !tiersList.some(tier => tier.tier === nt.tier))];
 
-  const commissionEntriesList = Object.entries(commissionEntries).map(([id, val]) => ({ id, ...val }));
+  const commissionEntriesList = Object.entries(commissionEntries).map(([id, val]) => ({ ...val, id }));
   const totalCommission = commissionEntriesList.reduce((sum, c) => sum + (c.commissionAmount || 0), 0);
   const unpaidCommission = commissionEntriesList.filter(c => !c.isPaid).reduce((sum, c) => sum + (c.commissionAmount || 0), 0);
 
@@ -233,7 +233,7 @@ export function NetworkManagerPanel({ onClose, managedNetwork }: NetworkManagerP
       tier = `${price}-custom`;
     } else {
       if (!bulkCodesTier) { toast.error(t("common.error")); return; }
-      const tierInfo = allTiersList.find(t => t.tier === bulkCodesTier);
+      const tierInfo = allTiersList.find(tier => tier.tier === bulkCodesTier);
       if (!tierInfo) { toast.error(t("common.error")); return; }
       price = tierInfo.price;
       data = tierInfo.data;
@@ -279,7 +279,7 @@ export function NetworkManagerPanel({ onClose, managedNetwork }: NetworkManagerP
     const price = Number(newNetTierPrice);
     if (isNaN(price) || price <= 0) { toast.error(t("common.error")); return; }
     const tierKey = String(price);
-    if (tiersList.find(t => t.tier === tierKey) || networkTiersList.find(t => t.tier === tierKey)) {
+    if (tiersList.find(tier => tier.tier === tierKey) || networkTiersList.find(tier => tier.tier === tierKey)) {
       toast.error(t("common.error")); return;
     }
     try {
@@ -575,7 +575,7 @@ export function NetworkManagerPanel({ onClose, managedNetwork }: NetworkManagerP
                     <div className="grid grid-cols-2 gap-3">
                       <Input type="number" value={newCardDuration} onChange={e => setNewCardDuration(e.target.value)} placeholder={t("manager.duration")} className="bg-gray-50 border-gray-200 rounded-xl" />
                       <select value={newCardTier} onChange={e => setNewCardTier(e.target.value)} className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-bold">
-                        {allTiersList.sort((a, b) => a.price - b.price).map(t => <option key={t.tier} value={t.tier}>{t.icon} {fmt(t.price)} ر.ي</option>)}
+                        {allTiersList.sort((a, b) => a.price - b.price).map(tier => <option key={tier.tier} value={tier.tier}>{tier.icon} {fmt(tier.price)} ر.ي</option>)}
                       </select>
                     </div>
                     <Button onClick={addCard} className="w-full bg-blue-500 text-white font-bold rounded-xl"><Plus className="w-4 h-4 ml-1" />{t("manager.addCard")}</Button>
@@ -610,7 +610,7 @@ export function NetworkManagerPanel({ onClose, managedNetwork }: NetworkManagerP
                         }}
                         className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-bold"
                       >
-                        {allTiersList.sort((a, b) => a.price - b.price).map(t => <option key={t.tier} value={t.tier}>{t.icon} {fmt(t.price)} ر.ي — {t.data} / {t.duration}</option>)}
+                        {allTiersList.sort((a, b) => a.price - b.price).map(tier => <option key={tier.tier} value={tier.tier}>{tier.icon} {fmt(tier.price)} ر.ي — {tier.data} / {tier.duration}</option>)}
                         <option value="custom">{t("manager.customCategory")}...</option>
                       </select>
                     </div>
@@ -704,13 +704,13 @@ export function NetworkManagerPanel({ onClose, managedNetwork }: NetworkManagerP
                     <h3 className="text-sm font-bold text-gray-500 flex items-center gap-2"><Hash className="w-4 h-4" />{t("manager.generalCategories")}</h3>
                   </div>
                   <div className="p-4 space-y-2">
-                    {tiersList.sort((a, b) => a.price - b.price).map(t => (
-                      <div key={t.id || t.tier} className="flex items-center justify-between p-3 rounded-xl bg-gray-50">
+                    {tiersList.sort((a, b) => a.price - b.price).map(tier => (
+                      <div key={tier.id || tier.tier} className="flex items-center justify-between p-3 rounded-xl bg-gray-50">
                         <div className="flex items-center gap-2">
-                          <span className="text-lg">{t.icon}</span>
+                          <span className="text-lg">{tier.icon}</span>
                           <div>
-                            <p className="text-sm font-bold text-gray-900">{fmt(t.price)} ر.ي</p>
-                            <p className="text-[10px] text-gray-400">{t.data} / {t.duration}</p>
+                            <p className="text-sm font-bold text-gray-900">{fmt(tier.price)} ر.ي</p>
+                            <p className="text-[10px] text-gray-400">{tier.data} / {tier.duration}</p>
                           </div>
                         </div>
                         <Badge className="text-[8px] bg-gray-200 text-gray-500">{t("manager.generalCategory")}</Badge>
@@ -726,9 +726,9 @@ export function NetworkManagerPanel({ onClose, managedNetwork }: NetworkManagerP
                       <h3 className="text-sm font-bold text-blue-600">{t("manager.customCategories")} ({networkTiersList.length})</h3>
                     </div>
                     <div className="p-4 space-y-2">
-                      {networkTiersList.map(t => (
-                        <div key={t.id} className="p-3 rounded-xl bg-blue-50">
-                          {editingNetTier === t.id ? (
+                      {networkTiersList.map(tier => (
+                        <div key={tier.id} className="p-3 rounded-xl bg-blue-50">
+                          {editingNetTier === tier.id ? (
                             <div className="space-y-2">
                               <div className="grid grid-cols-2 gap-2">
                                 <Input type="number" value={editNetTierPrice} onChange={e => setEditNetTierPrice(e.target.value)} placeholder={t("manager.price")} className="bg-white border-gray-200 rounded-xl text-sm" />
@@ -746,15 +746,15 @@ export function NetworkManagerPanel({ onClose, managedNetwork }: NetworkManagerP
                           ) : (
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
-                                <span className="text-lg">{t.icon}</span>
+                                <span className="text-lg">{tier.icon}</span>
                                 <div>
-                                  <p className="text-sm font-bold text-gray-900">{fmt(t.price)} ر.ي</p>
-                                  <p className="text-[10px] text-gray-400">{t.data} / {t.duration}</p>
+                                  <p className="text-sm font-bold text-gray-900">{fmt(tier.price)} ر.ي</p>
+                                  <p className="text-[10px] text-gray-400">{tier.data} / {tier.duration}</p>
                                 </div>
                               </div>
                               <div className="flex items-center gap-1">
-                                <Button size="sm" variant="ghost" onClick={() => startEditNetTier(t as NetworkTier & { id: string })} className="h-7 w-7 p-0 text-blue-400 hover:text-blue-600"><Pencil className="w-3 h-3" /></Button>
-                                <Button size="sm" variant="ghost" onClick={() => deleteNetworkTier(t.id)} className={`h-7 w-7 p-0 ${deleteConfirm === `nt-${t.id}` ? "text-red-500" : "text-gray-300"}`}><Trash2 className="w-3 h-3" /></Button>
+                                <Button size="sm" variant="ghost" onClick={() => startEditNetTier(tier as NetworkTier & { id: string })} className="h-7 w-7 p-0 text-blue-400 hover:text-blue-600"><Pencil className="w-3 h-3" /></Button>
+                                <Button size="sm" variant="ghost" onClick={() => deleteNetworkTier(tier.id)} className={`h-7 w-7 p-0 ${deleteConfirm === `nt-${tier.id}` ? "text-red-500" : "text-gray-300"}`}><Trash2 className="w-3 h-3" /></Button>
                               </div>
                             </div>
                           )}

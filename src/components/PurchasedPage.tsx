@@ -33,14 +33,14 @@ export function PurchasedPage({ user, onAuthClick }: PurchasedPageProps) {
   const { t, isRTL } = useLanguage();
   const [purchasedCards, setPurchasedCards] = useState<PurchasedCard[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [fbNetworks, setFbNetworks] = useState<NetworkItem[]>(DEFAULT_NETWORKS.map(n => ({ ...n, ownerId: null, ownerName: null, createdAt: 0 })));
+  const [fbNetworks, setFbNetworks] = useState<NetworkItem[]>(DEFAULT_NETWORKS.map(n => ({ ...n, ownerId: null, ownerName: null, createdAt: 0 } as NetworkItem)));
 
   // Load networks from Firebase
   useEffect(() => {
     const unsub = onValue(ref(db, "networks"), (snap) => {
       const data = snap.val();
       if (data) {
-        setFbNetworks(Object.entries(data).map(([id, val]: [string, unknown]) => ({ id, ...(val as Record<string, unknown>) })) as NetworkItem[]);
+        setFbNetworks(Object.entries(data).map(([id, val]: [string, unknown]) => ({ ...(val as Record<string, unknown>), id })) as NetworkItem[]);
       }
     });
     return () => unsub();

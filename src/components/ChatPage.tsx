@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, MessageCircle, Heart, ThumbsUp, Laugh, Flame, Clap } from "lucide-react";
+import { Send, MessageCircle, Heart, ThumbsUp, Laugh, Flame, PartyPopper } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { db, auth } from "@/lib/firebase";
@@ -44,10 +44,10 @@ export function ChatPage({ user, isAdmin }: ChatPageProps) {
     const unsub = onValue(ref(db, "chatPosts"), (snap) => {
       const data = snap.val();
       if (data) {
-        const postsList = Object.entries(data).map(([id, val]: [string, unknown]) => ({
-          id,
+        const postsList = (Object.entries(data).map(([id, val]: [string, unknown]) => ({
           ...(val as Record<string, unknown>),
-        })).sort((a: ChatPost, b: ChatPost) => (b.createdAt || 0) - (a.createdAt || 0)) as ChatPost[];
+          id,
+        })) as ChatPost[]).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
         setPosts(postsList);
       } else {
         setPosts([]);

@@ -140,7 +140,7 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
     }
   };
 
-  const activePlans = Object.entries(plans).filter(([, p]) => p.isActive).map(([id, p]) => ({ id, ...p }));
+  const activePlans = Object.entries(plans).filter(([, p]) => p.isActive).map(([id, p]) => ({ ...p, id }));
 
   const menuItems = [
     ...(user ? [{ icon: UserIcon, label: t("more2.profile"), desc: t("more2.profileDesc"), color: "bg-[#E8F5E9] text-[#1B7A3D]", action: () => onNavigate?.("profile") }] : []),

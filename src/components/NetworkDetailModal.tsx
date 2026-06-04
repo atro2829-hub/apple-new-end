@@ -33,7 +33,7 @@ export function NetworkDetailModal({ network, onClose, allCards = [], allTiers =
       const data = snap.val();
       if (data) {
         const locations = Object.entries(data)
-          .map(([id, val]: [string, unknown]) => ({ id, ...(val as Record<string, unknown>) }))
+          .map(([id, val]: [string, unknown]) => ({ ...(val as Record<string, unknown>), id }))
           .filter((loc: Record<string, unknown>) => loc.networkId === network.id && loc.isActive !== false)
           .sort((a: Record<string, unknown>, b: Record<string, unknown>) => ((b.createdAt as number) || 0) - ((a.createdAt as number) || 0)) as CardSaleLocation[];
         setSaleLocations(locations);
@@ -49,7 +49,7 @@ export function NetworkDetailModal({ network, onClose, allCards = [], allTiers =
     const unsub = onValue(ref(db, `networkTiers/${network.id}`), (snap) => {
       const data = snap.val();
       if (data) {
-        setNetworkTiers(Object.entries(data).map(([id, val]: [string, unknown]) => ({ id, ...(val as Record<string, unknown>) })) as NetworkTier[]);
+        setNetworkTiers(Object.entries(data).map(([id, val]: [string, unknown]) => ({ ...(val as Record<string, unknown>), id })) as NetworkTier[]);
       } else {
         setNetworkTiers([]);
       }
@@ -115,8 +115,8 @@ export function NetworkDetailModal({ network, onClose, allCards = [], allTiers =
                 <div
                   className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shadow-md bg-white/20 overflow-hidden"
                 >
-                  {(network as Record<string, unknown>).imageBase64 ? (
-                    <img src={(network as Record<string, unknown>).imageBase64 as string} alt={network.name} className="w-12 h-12 rounded-xl object-cover" />
+                  {(network as unknown as Record<string, unknown>).imageBase64 ? (
+                    <img src={(network as unknown as Record<string, unknown>).imageBase64 as string} alt={network.name} className="w-12 h-12 rounded-xl object-cover" />
                   ) : (
                     <span>{network.emoji}</span>
                   )}
@@ -247,18 +247,18 @@ export function NetworkDetailModal({ network, onClose, allCards = [], allTiers =
                   <h3 className="text-sm font-black text-gray-900">{t("networkDetail.availableCategories")}</h3>
                 </div>
                 <div className="p-3 space-y-1.5">
-                  {tierStats.map(t => (
-                    <div key={t.tier || t.id} className="flex items-center justify-between p-2.5 bg-gray-50 rounded-xl">
+                  {tierStats.map(tier => (
+                    <div key={tier.tier || tier.id} className="flex items-center justify-between p-2.5 bg-gray-50 rounded-xl">
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">{t.icon || "🟢"}</span>
+                        <span className="text-lg">{tier.icon || "🟢"}</span>
                         <div>
-                          <p className="text-xs font-bold text-gray-900">{t.price?.toLocaleString()} ر.ي</p>
-                          <p className="text-[10px] text-gray-400">{t.data} / {t.duration} {t("networkDetail.days")}</p>
+                          <p className="text-xs font-bold text-gray-900">{tier.price?.toLocaleString()} ر.ي</p>
+                          <p className="text-[10px] text-gray-400">{tier.data} / {tier.duration} {t("networkDetail.days")}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge className="bg-emerald-100 text-emerald-700 text-[8px]">{t.available} {t("networkDetail.available")}</Badge>
-                        <Badge className="bg-gray-100 text-gray-500 text-[8px]">{t.sold} {t("networkDetail.sold")}</Badge>
+                        <Badge className="bg-emerald-100 text-emerald-700 text-[8px]">{tier.available} {t("networkDetail.available")}</Badge>
+                        <Badge className="bg-gray-100 text-gray-500 text-[8px]">{tier.sold} {t("networkDetail.sold")}</Badge>
                       </div>
                     </div>
                   ))}

@@ -77,10 +77,10 @@ export function NetworkSubmissionPage({ user, onAuthClick }: { user: User | null
     const unsub = onValue(ref(db, "networkSubmissions"), (snap) => {
       const data = snap.val();
       if (data) {
-        const list = Object.entries(data)
-          .map(([id, val]: [string, unknown]) => ({ id, ...(val as Record<string, unknown>) }))
-          .filter((s: Record<string, unknown>) => s.userId === user.uid)
-          .sort((a: NetworkSubmission, b: NetworkSubmission) => (b.createdAt || 0) - (a.createdAt || 0)) as NetworkSubmission[];
+        const list = (Object.entries(data)
+          .map(([id, val]: [string, unknown]) => ({ ...(val as Record<string, unknown>), id })) as NetworkSubmission[])
+          .filter((s) => s.userId === user.uid)
+          .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
         setMySubmissions(list);
       } else {
         setMySubmissions([]);

@@ -103,9 +103,9 @@ export function NotificationCenter({ uid, isAdmin }: NotificationCenterProps) {
     const unsub = onValue(notifRef, (snap) => {
       const data = snap.val();
       if (data) {
-        const list = Object.entries(data)
-          .map(([id, val]: [string, unknown]) => ({ id, ...(val as Record<string, unknown>) }))
-          .sort((a: AppNotification, b: AppNotification) => (b.createdAt || 0) - (a.createdAt || 0)) as AppNotification[];
+        const list = (Object.entries(data)
+          .map(([id, val]: [string, unknown]) => ({ ...(val as Record<string, unknown>), id })) as AppNotification[])
+          .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
         setNotifications(list);
       } else {
         setNotifications([]);

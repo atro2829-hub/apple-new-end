@@ -71,30 +71,30 @@ export function HomePage({ user, isAdmin, onAuthClick, onNavigate }: HomePagePro
     const unsubs: (() => void)[] = [];
     const adsUnsub = onValue(ref(db, "advertisements"), (snap) => {
       const data = snap.val();
-      if (data) setAds(Object.entries(data).map(([id, val]: [string, unknown]) => ({ id, ...(val as Record<string, unknown>) })).filter((a: Record<string, unknown>) => a.isActive) as Advertisement[]);
+      if (data) setAds(Object.entries(data).map(([id, val]: [string, unknown]) => ({ ...(val as Record<string, unknown>), id })).filter((a: Record<string, unknown>) => a.isActive) as Advertisement[]);
     });
     unsubs.push(adsUnsub);
     const bannersUnsub = onValue(ref(db, "homeBanners"), (snap) => {
       const data = snap.val();
       if (data) {
-        const banners = Object.entries(data).map(([id, val]: [string, unknown]) => ({ id, ...(val as Record<string, unknown>) })).filter((b: Record<string, unknown>) => b.isActive).sort((a: Record<string, unknown>, b: Record<string, unknown>) => ((a.order as number) || 0) - ((b.order as number) || 0)) as HomeBanner[];
+        const banners = Object.entries(data).map(([id, val]: [string, unknown]) => ({ ...(val as Record<string, unknown>), id })).filter((b: Record<string, unknown>) => b.isActive).sort((a: Record<string, unknown>, b: Record<string, unknown>) => ((a.order as number) || 0) - ((b.order as number) || 0)) as HomeBanner[];
         setHomeBanners(banners);
       } else setHomeBanners([]);
     });
     unsubs.push(bannersUnsub);
     const simsUnsub = onValue(ref(db, "simCards"), (snap) => {
       const data = snap.val();
-      if (data) setSimCards(Object.entries(data).map(([id, val]: [string, unknown]) => ({ id, ...(val as Record<string, unknown>) })).filter((s: Record<string, unknown>) => s.isAvailable) as SimCard[]);
+      if (data) setSimCards(Object.entries(data).map(([id, val]: [string, unknown]) => ({ ...(val as Record<string, unknown>), id })).filter((s: Record<string, unknown>) => s.isAvailable) as SimCard[]);
     });
     unsubs.push(simsUnsub);
     const netUnsub = onValue(ref(db, "networks"), (snap) => {
       const data = snap.val();
-      if (data) setFbNetworks(Object.entries(data).map(([id, val]: [string, unknown]) => ({ id, ...(val as Record<string, unknown>) })) as NetworkItem[]);
+      if (data) setFbNetworks(Object.entries(data).map(([id, val]: [string, unknown]) => ({ ...(val as Record<string, unknown>), id })) as NetworkItem[]);
     });
     unsubs.push(netUnsub);
     const cardsUnsub = onValue(ref(db, "cards"), (snap) => {
       const data = snap.val();
-      setAllCards(data ? Object.entries(data).map(([id, val]: [string, unknown]) => ({ id, ...(val as Record<string, unknown>) })) as CardItem[] : []);
+      setAllCards(data ? Object.entries(data).map(([id, val]: [string, unknown]) => ({ ...(val as Record<string, unknown>), id })) as CardItem[] : []);
     });
     unsubs.push(cardsUnsub);
     if (user) {

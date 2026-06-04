@@ -45,10 +45,10 @@ export function ComplaintPage({ user, isAdmin, onBack }: ComplaintPageProps) {
     const unsub = onValue(ref(db, "tickets"), (snap) => {
       const data = snap.val();
       if (data) {
-        let ticketsList = Object.entries(data).map(([id, val]: [string, unknown]) => ({
-          id,
+        let ticketsList = (Object.entries(data).map(([id, val]: [string, unknown]) => ({
           ...(val as Record<string, unknown>),
-        })).sort((a: Ticket, b: Ticket) => (b.createdAt || 0) - (a.createdAt || 0)) as Ticket[];
+          id,
+        })) as Ticket[]).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
         
         // Non-admin users only see their own tickets
         if (!isAdmin && user) {
