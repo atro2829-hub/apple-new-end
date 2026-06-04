@@ -134,21 +134,21 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
     if (!user || !mySubscription) return;
     try {
       await update(ref(db, `userSubscriptions/${user.uid}`), { autoRenew: !mySubscription.autoRenew });
-      toast.success(mySubscription.autoRenew ? "تم تعطيل التجديد التلقائي" : "تم تفعيل التجديد التلقائي");
+      toast.success(mySubscription.autoRenew ? t("more2.autoRenewOff") : t("more2.autoRenewOn"));
     } catch {
-      toast.error("حدث خطأ");
+      toast.error(t("common.error"));
     }
   };
 
   const activePlans = Object.entries(plans).filter(([, p]) => p.isActive).map(([id, p]) => ({ id, ...p }));
 
   const menuItems = [
-    ...(user ? [{ icon: UserIcon, label: "الملف الشخصي", desc: "تعديل بياناتك وإعداداتك", color: "bg-[#E8F5E9] text-[#1B7A3D]", action: () => onNavigate?.("profile") }] : []),
-    { icon: Shield, label: "سياسة الخصوصية", desc: "حماية بياناتك الشخصية", color: "bg-blue-50 text-blue-500", action: () => setShowPrivacy(true) },
-    { icon: Scale, label: "شروط الاستخدام", desc: "شروط وأحكام التطبيق", color: "bg-purple-50 text-purple-500", action: () => setShowTerms(true) },
-    { icon: HeadphonesIcon, label: "تواصل مع الدعم", desc: "تحدث معنا عبر واتساب", color: "bg-green-50 text-green-500", action: () => setShowContact(true) },
-    { icon: RefreshCw, label: "التحديثات", desc: `الإصدار ${appVersion}`, color: "bg-orange-50 text-orange-500" },
-    { icon: Info, label: "عن التطبيق", desc: "معلومات التطبيق والمالك", color: "bg-[#E8F5E9] text-[#1B7A3D]", action: () => setShowAbout(true) },
+    ...(user ? [{ icon: UserIcon, label: t("more2.profile"), desc: t("more2.profileDesc"), color: "bg-[#E8F5E9] text-[#1B7A3D]", action: () => onNavigate?.("profile") }] : []),
+    { icon: Shield, label: t("more2.privacyPolicy"), desc: t("more2.privacyDesc"), color: "bg-blue-50 text-blue-500", action: () => setShowPrivacy(true) },
+    { icon: Scale, label: t("more2.termsOfUse"), desc: t("more2.termsDesc"), color: "bg-purple-50 text-purple-500", action: () => setShowTerms(true) },
+    { icon: HeadphonesIcon, label: t("more2.contactSupport"), desc: t("more2.supportDesc"), color: "bg-green-50 text-green-500", action: () => setShowContact(true) },
+    { icon: RefreshCw, label: t("more2.updates"), desc: `${t("more2.version")} ${appVersion}`, color: "bg-orange-50 text-orange-500" },
+    { icon: Info, label: t("more2.aboutApp"), desc: t("more2.aboutDesc"), color: "bg-[#E8F5E9] text-[#1B7A3D]", action: () => setShowAbout(true) },
   ];
 
   // Default privacy policy text (Arabic)
@@ -211,9 +211,10 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
       exit={{ opacity: 0 }}
       transition={{ type: "spring", stiffness: 120, damping: 14 }}
       className="px-4 pt-4"
+      dir={isRTL ? "rtl" : "ltr"}
     >
       {/* Page Title */}
-      <h2 className="text-xl font-black text-gray-900 mb-4">المزيد</h2>
+      <h2 className="text-xl font-black text-gray-900 mb-4">{t("more2.title")}</h2>
 
       {/* User Profile Card */}
       {user && userInfo ? (
@@ -228,7 +229,7 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
               {userInfo.phone && <p className="text-[10px] text-gray-400 truncate" dir="ltr">{userInfo.phone}</p>}
             </div>
             {isAdmin && (
-              <span className="bg-[#1B7A3D] text-white text-[9px] font-bold px-2 py-0.5 rounded-full">أدمن</span>
+              <span className="bg-[#1B7A3D] text-white text-[9px] font-bold px-2 py-0.5 rounded-full">{t("common.admin")}</span>
             )}
           </div>
         </div>
@@ -237,9 +238,9 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
           <div className="w-14 h-14 rounded-2xl bg-[#E8F5E9] flex items-center justify-center mx-auto mb-3">
             <Users className="w-7 h-7 text-[#1B7A3D]" />
           </div>
-          <p className="text-gray-600 text-sm mb-3 font-semibold">سجل دخولك للاستفادة من جميع المميزات</p>
+          <p className="text-gray-600 text-sm mb-3 font-semibold">{t("more2.loginForFeatures")}</p>
           <Button onClick={onAuthClick} className="bg-gradient-to-l from-[#1B7A3D] to-[#22A24D] text-white font-bold rounded-xl h-11">
-            <LogIn className="w-4 h-4 ml-2" />تسجيل الدخول
+            <LogIn className="w-4 h-4 ml-2" />{t("auth.login")}
           </Button>
         </div>
       )}
@@ -256,14 +257,14 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
               <Crown className="w-6 h-6 text-white" />
             </div>
             <div className="flex-1 text-right">
-              <p className="text-sm font-black text-gray-900">اشتراكاتي</p>
+              <p className="text-sm font-black text-gray-900">{t("more2.mySubscriptions")}</p>
               <p className="text-[10px] text-gray-400">
-                {mySubscription ? `باقة ${mySubscription.planName} نشطة` : "لا يوجد اشتراك حالي"}
+                {mySubscription ? `✅ ${t("more2.active")}` : t("more2.noSubscription")}
               </p>
             </div>
             <div className="flex items-center gap-2">
               {mySubscription && (
-                <Badge className="bg-[#E8F5E9] text-[#1B7A3D] text-[9px]">نشط</Badge>
+                <Badge className="bg-[#E8F5E9] text-[#1B7A3D] text-[9px]">{t("more2.active")}</Badge>
               )}
               {showSubscriptions ? (
                 <ChevronLeft className="w-4 h-4 text-amber-500 rotate-90" />
@@ -291,26 +292,26 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
                           <Crown className="w-5 h-5" />
                           <span className="font-bold text-sm">{mySubscription.planName}</span>
                         </div>
-                        <Badge className="bg-white/20 text-white border-0 text-[10px]">✅ نشط</Badge>
+                        <Badge className="bg-white/20 text-white border-0 text-[10px]">✅ {t("more2.active")}</Badge>
                       </div>
 
                       {/* Details */}
                       <div className="space-y-2 mt-3">
                         <div className="flex items-center gap-2 text-white/80 text-xs">
                           <Calendar className="w-3.5 h-3.5" />
-                          <span>تاريخ التفعيل: {mySubscription.activatedAt ? formatDate(mySubscription.activatedAt) : ""}</span>
+                          <span>{t("more2.activationDate")}: {mySubscription.activatedAt ? formatDate(mySubscription.activatedAt) : ""}</span>
                         </div>
                         <div className="flex items-center gap-2 text-white/80 text-xs">
                           <Clock className="w-3.5 h-3.5" />
-                          <span>تاريخ الانتهاء: {mySubscription.expiresAt ? formatDate(mySubscription.expiresAt) : ""}</span>
+                          <span>{t("more2.expiryDate")}: {mySubscription.expiresAt ? formatDate(mySubscription.expiresAt) : ""}</span>
                         </div>
 
                         {/* Days remaining */}
                         {mySubscription.expiresAt && (
                           <div className="mt-2">
                             <div className="flex items-center justify-between text-white/60 text-[10px] mb-1">
-                              <span>المدة المتبقية</span>
-                              <span>{Math.max(Math.ceil((mySubscription.expiresAt - Date.now()) / 86400000), 0)} يوم</span>
+                              <span>{t("more2.remaining")}</span>
+                              <span>{Math.max(Math.ceil((mySubscription.expiresAt - Date.now()) / 86400000), 0)}</span>
                             </div>
                             <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
                               <motion.div
@@ -340,11 +341,11 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
                               <ToggleLeft className="w-5 h-5 text-white/50" />
                             )}
                             <span className="text-xs font-bold">
-                              {mySubscription.autoRenew ? "التجديد التلقائي مفعل" : "التجديد التلقائي معطل"}
+                              {mySubscription.autoRenew ? t("more2.autoRenewOn") : t("more2.autoRenewOff")}
                             </span>
                           </div>
                           <span className="text-[9px] text-white/50">
-                            {mySubscription.autoRenew ? "🔄 سيتم التجديد تلقائياً" : "⏸ لن يتم التجديد"}
+                            {mySubscription.autoRenew ? "🔄" : "⏸"}
                           </span>
                         </motion.button>
                       </div>
@@ -354,18 +355,13 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
                       <div className="w-14 h-14 rounded-full bg-amber-50 flex items-center justify-center mx-auto mb-3">
                         <Crown className="w-7 h-7 text-amber-400" />
                       </div>
-                      <p className="text-gray-500 text-sm font-bold">لا يوجد اشتراك حالي</p>
-                      <p className="text-gray-400 text-xs mt-1">اشترك في باقة من صفحة الرصيد للاستفادة من المميزات</p>
+                      <p className="text-gray-500 text-sm font-bold">{t("more2.noSubscription")}</p>
                     </div>
                   )}
 
                   {/* Past Subscriptions */}
                   {pastSubscriptions.length > 0 && (
                     <div>
-                      <h4 className="text-xs font-bold text-gray-400 mb-2 flex items-center gap-1.5">
-                        <Clock className="w-3 h-3" />
-                        الاشتراكات السابقة
-                      </h4>
                       {pastSubscriptions.map((sub, i) => (
                         <div key={i} className="bg-gray-50 rounded-xl p-3 border border-gray-100">
                           <div className="flex items-center justify-between">
@@ -373,12 +369,11 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
                               <Crown className="w-4 h-4 text-gray-400" />
                               <span className="text-xs font-bold text-gray-600">{sub.planName}</span>
                             </div>
-                            <Badge className="bg-gray-100 text-gray-400 text-[9px]">منتهي</Badge>
                           </div>
                           <div className="flex items-center gap-2 text-[10px] text-gray-400 mt-1">
-                            <span>من: {sub.activatedAt ? formatDate(sub.activatedAt) : ""}</span>
+                            <span>{sub.activatedAt ? formatDate(sub.activatedAt) : ""}</span>
                             <span>—</span>
-                            <span>إلى: {sub.expiresAt ? formatDate(sub.expiresAt) : ""}</span>
+                            <span>{sub.expiresAt ? formatDate(sub.expiresAt) : ""}</span>
                           </div>
                         </div>
                       ))}
@@ -388,10 +383,6 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
                   {/* Available Plans */}
                   {activePlans.length > 0 && !mySubscription && (
                     <div>
-                      <h4 className="text-xs font-bold text-gray-400 mb-2 flex items-center gap-1.5">
-                        <Sparkles className="w-3 h-3" />
-                        الباقات المتاحة
-                      </h4>
                       {activePlans.map(plan => (
                         <div key={plan.id} className="bg-white rounded-xl card-shadow p-3 border border-amber-100">
                           <div className="flex items-center justify-between mb-1">
@@ -402,7 +393,6 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
                             <span className="text-sm font-black text-[#1B7A3D]">{plan.price.toLocaleString()} <span className="text-[9px] text-gray-400">ر.ي</span></span>
                           </div>
                           {plan.description && <p className="text-[10px] text-gray-400">{plan.description}</p>}
-                          <p className="text-[9px] text-gray-300 mt-0.5">المدة: {plan.durationDays} يوم</p>
                         </div>
                       ))}
                     </div>
@@ -439,13 +429,13 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
           <motion.div
             whileTap={{ scale: 0.97 }}
             className="bg-red-50 rounded-2xl p-4 flex items-center gap-3 cursor-pointer hover:bg-red-100 transition-colors active:bg-red-200"
-            onClick={async () => { await signOut(auth); toast.success("تم تسجيل الخروج"); }}
+            onClick={async () => { await signOut(auth); toast.success(t("auth.logout")); }}
           >
             <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
               <LogOut className="w-5 h-5 text-red-500" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-bold text-red-600">تسجيل الخروج</p>
+              <p className="text-sm font-bold text-red-600">{t("auth.logout")}</p>
             </div>
           </motion.div>
         )}
@@ -488,7 +478,7 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
             <div className="px-5 pb-3 flex items-center justify-between border-b border-gray-100 flex-shrink-0">
               <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
                 <Shield className="w-5 h-5 text-blue-500" />
-                سياسة الخصوصية
+                {t("more2.privacyPolicy")}
               </h3>
               <button onClick={() => setShowPrivacy(false)} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
                 <X className="w-4 h-4 text-gray-500" />
@@ -536,7 +526,7 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
             <div className="px-5 pb-3 flex items-center justify-between border-b border-gray-100 flex-shrink-0">
               <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
                 <Scale className="w-5 h-5 text-purple-500" />
-                شروط الاستخدام
+                {t("more2.termsOfUse")}
               </h3>
               <button onClick={() => setShowTerms(false)} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
                 <X className="w-4 h-4 text-gray-500" />
@@ -584,7 +574,7 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
             <div className="px-5 pb-3 flex items-center justify-between border-b border-gray-100 flex-shrink-0">
               <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
                 <HeadphonesIcon className="w-5 h-5 text-green-500" />
-                تواصل مع الدعم
+                {t("more2.contactSupport")}
               </h3>
               <button onClick={() => setShowContact(false)} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
                 <X className="w-4 h-4 text-gray-500" />
@@ -597,14 +587,13 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
                 <div className="w-16 h-16 rounded-full bg-[#E8F5E9] flex items-center justify-center mx-auto mb-3">
                   <MessageCircle className="w-8 h-8 text-[#1B7A3D]" />
                 </div>
-                <h4 className="text-lg font-black text-gray-900">فريق الدعم</h4>
-                <p className="text-sm text-gray-400 mt-1">نحن هنا لمساعدتك. تواصل معنا عبر أي من القنوات التالية</p>
+                <h4 className="text-lg font-black text-gray-900">{t("more2.supportTeam")}</h4>
               </div>
 
               <div className="space-y-3">
                 {/* WhatsApp */}
                 <a
-                  href={generateWhatsAppLink(supportWhatsApp, "مرحباً، أحتاج مساعدة في تطبيق Apple.NET")}
+                  href={generateWhatsAppLink(supportWhatsApp, "")}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-3 p-4 rounded-2xl bg-[#E8F5E9] hover:bg-green-100 transition-colors"
@@ -613,8 +602,7 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
                     <MessageCircle className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-bold text-gray-900">واتساب</p>
-                    <p className="text-[10px] text-gray-400">الدعم المباشر عبر واتساب</p>
+                    <p className="text-sm font-bold text-gray-900">{t("more2.whatsapp")}</p>
                   </div>
                   <ChevronLeft className="w-4 h-4 text-gray-300 rotate-180" />
                 </a>
@@ -628,7 +616,7 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
                     <Phone className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-bold text-gray-900">اتصال هاتفي</p>
+                    <p className="text-sm font-bold text-gray-900">{t("more2.phoneCall")}</p>
                     <p className="text-[10px] text-gray-400" dir="ltr">+{supportWhatsApp}</p>
                   </div>
                   <ChevronLeft className="w-4 h-4 text-gray-300 rotate-180" />
@@ -643,14 +631,12 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
                     <Mail className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-bold text-gray-900">البريد الإلكتروني</p>
+                    <p className="text-sm font-bold text-gray-900">{t("more2.email")}</p>
                     <p className="text-[10px] text-gray-400" dir="ltr">support@apple-net.com</p>
                   </div>
                   <ChevronLeft className="w-4 h-4 text-gray-300 rotate-180" />
                 </a>
               </div>
-
-              <p className="text-[10px] text-gray-300 text-center mt-6">ساعات العمل: 8 صباحاً — 11 مساءً (توقيت اليمن)</p>
             </div>
           </motion.div>
         )}
@@ -685,7 +671,7 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
 
             {/* Header */}
             <div className="px-5 pb-3 flex items-center justify-between border-b border-gray-100 flex-shrink-0">
-              <h3 className="text-lg font-black text-gray-900">عن التطبيق</h3>
+              <h3 className="text-lg font-black text-gray-900">{t("more2.aboutApp")}</h3>
               <button onClick={() => setShowAbout(false)} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
                 <X className="w-4 h-4 text-gray-500" />
               </button>
@@ -699,7 +685,7 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
                   <img src="/images/IMG_20260527_220851.jpg" alt="Apple.NET" className="w-full h-full object-cover" />
                 </div>
                 <AppleNetLogo size="md" />
-                <p className="text-xs text-gray-400 mt-1">الإصدار {appVersion} (بناء 2026)</p>
+                <p className="text-xs text-gray-400 mt-1">{t("more2.versionLabel")} {appVersion}</p>
                 <div className="flex items-center gap-1 mt-2">
                   {[1, 2, 3, 4, 5].map(i => (
                     <Star key={i} className="w-4 h-4 text-amber-400 fill-amber-400" />
@@ -710,19 +696,19 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
               {/* App Description */}
               <div className="bg-[#E8F5E9] rounded-2xl p-4 mb-4">
                 <p className="text-sm text-gray-700 leading-relaxed">
-                  تطبيق Apple.NET هو منصة احترافية لإدارة شبكات الهوت سبوت وبيع كروت الإنترنت. يتيح للمستخدمين شراء الكروت وشحن الأرصدة بسهولة وأمان، مع نظام إيداع واشتراكات مرن.
+                  Apple.NET
                 </p>
               </div>
 
               {/* Owner Info */}
               <div className="bg-white rounded-2xl card-shadow overflow-hidden mb-4">
                 <div className="bg-gradient-to-l from-[#1B7A3D] to-[#22A24D] p-4">
-                  <p className="text-[10px] text-white/70 font-bold uppercase tracking-wider mb-2">مالك التطبيق</p>
+                  <p className="text-[10px] text-white/70 font-bold uppercase tracking-wider mb-2">{t("more2.owner")}</p>
                   <div className="flex items-center gap-3">
                     <img src="/images/IMG-20260527-WA0045.jpg" alt={ownerInfo.name} className="w-14 h-14 rounded-2xl object-cover border-2 border-white/30 shadow-md" />
                     <div>
                       <h3 className="text-base font-black text-white">{ownerInfo.name}</h3>
-                      <p className="text-xs text-white/80">مؤسس ومدير شبكة Apple.NET</p>
+                      <p className="text-xs text-white/80">Apple.NET</p>
                     </div>
                   </div>
                 </div>
@@ -732,8 +718,8 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
                       <Crown className="w-4 h-4 text-[#1B7A3D]" />
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-gray-900">المنصب</p>
-                      <p className="text-[10px] text-gray-400">مالك ومدير الشبكة</p>
+                      <p className="text-xs font-bold text-gray-900">{t("more2.owner")}</p>
+                      <p className="text-[10px] text-gray-400">Apple.NET</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -741,8 +727,7 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
                       <Globe className="w-4 h-4 text-blue-500" />
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-gray-900">الشبكة</p>
-                      <p className="text-[10px] text-gray-400">Apple.NET HotSpot</p>
+                      <p className="text-xs font-bold text-gray-900">Apple.NET HotSpot</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -750,15 +735,13 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
                       <Wifi className="w-4 h-4 text-purple-500" />
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-gray-900">التخصص</p>
-                      <p className="text-[10px] text-gray-400">شبكات إنترنت وهوت سبوت</p>
+                      <p className="text-xs font-bold text-gray-900">WiFi / HotSpot</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Social Links */}
                 <div className="px-4 pb-4">
-                  <p className="text-[10px] font-bold text-gray-400 mb-2">تواصل مع المالك</p>
                   <div className="flex gap-2">
                     <a
                       href={socialLinks.whatsapp}
@@ -767,7 +750,7 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
                       className="flex-1 py-2.5 rounded-xl bg-[#E8F5E9] flex items-center justify-center gap-1.5 hover:bg-green-100 transition-colors haptic-press"
                     >
                       <MessageCircle className="w-4 h-4 text-[#1B7A3D]" />
-                      <span className="text-[10px] font-bold text-[#1B7A3D]">واتساب</span>
+                      <span className="text-[10px] font-bold text-[#1B7A3D]">{t("more2.whatsapp")}</span>
                     </a>
                     <a
                       href={socialLinks.instagram}
@@ -776,7 +759,7 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
                       className="flex-1 py-2.5 rounded-xl bg-pink-50 flex items-center justify-center gap-1.5 hover:bg-pink-100 transition-colors haptic-press"
                     >
                       <Instagram className="w-4 h-4 text-pink-500" />
-                      <span className="text-[10px] font-bold text-pink-500">انستغرام</span>
+                      <span className="text-[10px] font-bold text-pink-500">Instagram</span>
                     </a>
                     <a
                       href={socialLinks.facebook}
@@ -785,7 +768,7 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
                       className="flex-1 py-2.5 rounded-xl bg-blue-50 flex items-center justify-center gap-1.5 hover:bg-blue-100 transition-colors haptic-press"
                     >
                       <Facebook className="w-4 h-4 text-blue-500" />
-                      <span className="text-[10px] font-bold text-blue-500">فيسبوك</span>
+                      <span className="text-[10px] font-bold text-blue-500">Facebook</span>
                     </a>
                   </div>
                 </div>
@@ -795,18 +778,17 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
               <div className="bg-white rounded-2xl card-shadow p-4 mb-4">
                 <h4 className="text-sm font-black text-gray-900 mb-3 flex items-center gap-2">
                   <Code className="w-4 h-4 text-[#1B7A3D]" />
-                  المعلومات التقنية
+                  App Info
                 </h4>
                 <div className="space-y-2.5">
                   {[
-                    { label: "اسم التطبيق", value: "Apple.NET" },
-                    { label: "الإصدار", value: appVersion },
-                    { label: "المنصة", value: "ويب + أندرويد" },
-                    { label: "الإطار", value: "Next.js 16" },
-                    { label: "قاعدة البيانات", value: "Firebase Realtime DB" },
-                    { label: "التصميم", value: "iOS-style RTL" },
-                    { label: "اللغة", value: "العربية" },
-                    { label: "المطور", value: ownerInfo.name },
+                    { label: t("more2.version"), value: appVersion },
+                    { label: t("more2.platform"), value: "Web + Android" },
+                    { label: t("more2.framework"), value: "Next.js 16" },
+                    { label: t("more2.database"), value: "Firebase Realtime DB" },
+                    { label: t("more2.design"), value: "iOS-style RTL" },
+                    { label: t("more2.language"), value: "العربية / English" },
+                    { label: t("more2.developer"), value: ownerInfo.name },
                   ].map((item, i) => (
                     <div key={i} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
                       <span className="text-xs text-gray-400">{item.label}</span>
@@ -823,8 +805,8 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
                     <Download className="w-5 h-5 text-[#1B7A3D]" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-gray-900">تنزيل تطبيق أندرويد</p>
-                    <p className="text-[10px] text-gray-400">نسخة APK أصلية</p>
+                    <p className="text-sm font-bold text-gray-900">{t("more2.downloadAndroid")}</p>
+                    <p className="text-[10px] text-gray-400">{t("more2.originalApk")}</p>
                   </div>
                 </div>
                 {appDownloadUrl ? (
@@ -835,7 +817,7 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
                     className="w-full bg-gradient-to-l from-[#1B7A3D] to-[#22A24D] text-white font-bold rounded-xl h-11 flex items-center justify-center gap-2 text-sm btn-green-shadow haptic-press"
                   >
                     <Download className="w-4 h-4" />
-                    تنزيل APK
+                    {t("more2.downloadApk")}
                   </a>
                 ) : null}
               </div>
@@ -843,7 +825,7 @@ export function MorePage({ user, isAdmin, onAuthClick, onNavigate }: MorePagePro
               {/* Made with love */}
               <div className="text-center py-4">
                 <p className="text-[10px] text-gray-300 flex items-center justify-center gap-1">
-                  صُنع بـ <Heart className="w-3 h-3 text-red-400 fill-red-400" /> في اليمن
+                  {t("more2.madeIn")} <Heart className="w-3 h-3 text-red-400 fill-red-400" /> {t("more2.inYemen")}
                 </p>
               </div>
             </div>

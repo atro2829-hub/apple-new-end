@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { ref, onValue, get } from "firebase/database";
-import { NETWORKS as DEFAULT_NETWORKS, PROVINCES, getDistricts } from "@/lib/constants";
+import { NETWORKS as DEFAULT_NETWORKS, PROVINCES, getDistricts, getDistrictsEn } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { NetworkDetailModal } from "@/components/NetworkDetailModal";
@@ -36,7 +36,7 @@ interface HomeBanner {
 }
 
 export function HomePage({ user, isAdmin, onAuthClick, onNavigate }: HomePageProps) {
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, lang } = useLanguage();
 
   const [ads, setAds] = useState<Advertisement[]>([]);
   const [homeBanners, setHomeBanners] = useState<HomeBanner[]>([]);
@@ -141,6 +141,7 @@ export function HomePage({ user, isAdmin, onAuthClick, onNavigate }: HomePagePro
   });
 
   const districts = selectedProvince ? getDistricts(selectedProvince) : [];
+  const districtsEn = selectedProvince ? getDistrictsEn(selectedProvince) : [];
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     const el = scrollRef.current;
@@ -181,10 +182,10 @@ export function HomePage({ user, isAdmin, onAuthClick, onNavigate }: HomePagePro
         </motion.div>
         {pullY > 30 && !refreshing && (
           <span className="text-[10px] text-gray-400 dark:text-slate-500 mx-2">
-            <ArrowDown className="w-3 h-3 inline" /> {isRTL ? "اسحب للتحديث" : "Pull to refresh"}
+            <ArrowDown className="w-3 h-3 inline" /> {t("home.pullToRefresh")}
           </span>
         )}
-        {refreshing && <span className="text-[10px] text-[#1B7A3D] mx-2 font-bold">{isRTL ? "جاري التحديث..." : "Refreshing..."}</span>}
+        {refreshing && <span className="text-[10px] text-[#1B7A3D] mx-2 font-bold">{t("home.refreshing")}</span>}
       </motion.div>
 
       <div
@@ -218,7 +219,7 @@ export function HomePage({ user, isAdmin, onAuthClick, onNavigate }: HomePagePro
                   <div>
                     <p className="text-white/50 text-[10px] font-medium tracking-wider uppercase">Apple.NET</p>
                     <h1 className="text-base font-black text-white leading-tight">
-                      {user ? (isRTL ? "مرحباً بك 👋" : "Welcome back 👋") : (isRTL ? "مرحباً بك" : "Welcome")}
+                      {user ? t("home.welcomeBack") : t("home.welcome")}
                     </h1>
                   </div>
                 </div>
@@ -228,7 +229,7 @@ export function HomePage({ user, isAdmin, onAuthClick, onNavigate }: HomePagePro
                     size="sm"
                     className="bg-white/20 hover:bg-white/30 text-white border border-white/25 font-bold rounded-xl text-xs h-8 px-3 backdrop-blur-sm"
                   >
-                    {isRTL ? "تسجيل الدخول" : "Sign In"}
+                    {t("home.signIn")}
                   </Button>
                 )}
               </div>
@@ -237,7 +238,7 @@ export function HomePage({ user, isAdmin, onAuthClick, onNavigate }: HomePagePro
                 <>
                   {/* Balance display */}
                   <div className="bg-white/10 rounded-2xl px-4 py-3.5 mb-4 backdrop-blur-sm border border-white/10">
-                    <p className="text-white/50 text-[10px] font-medium mb-1">{isRTL ? "رصيدك الحالي" : "Current Balance"}</p>
+                    <p className="text-white/50 text-[10px] font-medium mb-1">{t("home.currentBalance")}</p>
                     <motion.p
                       key={balance}
                       initial={{ scale: 0.85, opacity: 0 }}
@@ -245,12 +246,12 @@ export function HomePage({ user, isAdmin, onAuthClick, onNavigate }: HomePagePro
                       transition={{ type: "spring", stiffness: 300, damping: 20 }}
                       className="text-3xl font-black text-white tracking-tight"
                     >
-                      {balance.toLocaleString()} <span className="text-base font-medium text-white/60">{isRTL ? "ر.ي" : "YER"}</span>
+                      {balance.toLocaleString()} <span className="text-base font-medium text-white/60">{t("home.yer")}</span>
                     </motion.p>
                     {maxBalance > 0 && (
                       <div className="mt-2">
                         <div className="flex justify-between text-white/35 text-[9px] mb-1">
-                          <span>{isRTL ? "من أصل" : "out of"} {maxBalance.toLocaleString()}</span>
+                          <span>{t("home.outOf")} {maxBalance.toLocaleString()}</span>
                           <span>{Math.round((balance / maxBalance) * 100)}%</span>
                         </div>
                         <div className="h-1 bg-white/15 rounded-full overflow-hidden">
@@ -267,30 +268,28 @@ export function HomePage({ user, isAdmin, onAuthClick, onNavigate }: HomePagePro
                       className="bg-white text-[#1B7A3D] font-black rounded-xl h-11 text-sm hover:bg-white/90 shadow-lg haptic-press"
                     >
                       <ShoppingBag className="w-4 h-4 mx-1.5" />
-                      {isRTL ? "شراء كروت" : "Buy Cards"}
+                      {t("home.buyCards")}
                     </Button>
                     <Button
                       onClick={() => onNavigate("deposit")}
                       className="bg-white/15 hover:bg-white/25 text-white border border-white/25 font-bold rounded-xl h-11 text-sm haptic-press"
                     >
                       <Wallet className="w-4 h-4 mx-1.5" />
-                      {isRTL ? "إيداع رصيد" : "Deposit"}
+                      {t("home.deposit")}
                     </Button>
                   </div>
                 </>
               ) : (
                 <>
                   <p className="text-white/65 text-sm leading-relaxed text-center mb-4 max-w-xs mx-auto">
-                    {isRTL
-                      ? "منصة شراء كروت الإنترنت الأولى في اليمن"
-                      : "Yemen's #1 internet card management platform"}
+                    {t("home.platform")}
                   </p>
                   <div className="grid grid-cols-2 gap-2">
                     <Button onClick={onAuthClick} className="bg-white text-[#1B7A3D] font-black rounded-xl h-11 text-sm hover:bg-white/90 shadow-lg haptic-press">
-                      {isRTL ? "تسجيل الدخول" : "Sign In"}
+                      {t("home.signIn")}
                     </Button>
                     <Button onClick={() => onNavigate("cards")} className="bg-white/15 hover:bg-white/25 text-white border border-white/25 font-bold rounded-xl h-11 text-sm haptic-press">
-                      <Wifi className="w-4 h-4 mx-1" />{isRTL ? "تصفح الكروت" : "Browse Cards"}
+                      <Wifi className="w-4 h-4 mx-1" />{t("home.browseCards")}
                     </Button>
                   </div>
                 </>
@@ -302,14 +301,14 @@ export function HomePage({ user, isAdmin, onAuthClick, onNavigate }: HomePagePro
         {/* ══ 2. QUICK SERVICES ══ */}
         <div>
           <p className="text-[11px] font-bold text-gray-400 dark:text-slate-500 mb-2 px-1 uppercase tracking-wider">
-            {isRTL ? "الخدمات" : "Services"}
+            {t("home.services")}
           </p>
           <div className="grid grid-cols-4 gap-2">
             {[
-              { icon: Wifi, label: isRTL ? "كروت" : "Cards", color: "bg-[#E8F5E9] dark:bg-green-900/30 text-[#1B7A3D]", action: () => onNavigate("cards") },
-              { icon: CreditCard, label: isRTL ? "إيداع" : "Deposit", color: "bg-blue-50 dark:bg-blue-900/30 text-blue-500 dark:text-blue-400", action: () => onNavigate("deposit") },
+              { icon: Wifi, label: t("home.cards"), color: "bg-[#E8F5E9] dark:bg-green-900/30 text-[#1B7A3D]", action: () => onNavigate("cards") },
+              { icon: CreditCard, label: t("home.deposit"), color: "bg-blue-50 dark:bg-blue-900/30 text-blue-500 dark:text-blue-400", action: () => onNavigate("deposit") },
               { icon: Satellite, label: "Starlink", color: "bg-purple-50 dark:bg-purple-900/30 text-purple-500 dark:text-purple-400", action: () => onNavigate("starlink") },
-              { icon: Building2, label: isRTL ? "بنوك" : "Banks", color: "bg-orange-50 dark:bg-orange-900/30 text-orange-500 dark:text-orange-400", action: () => onNavigate("banks") },
+              { icon: Building2, label: t("home.banks"), color: "bg-orange-50 dark:bg-orange-900/30 text-orange-500 dark:text-orange-400", action: () => onNavigate("banks") },
             ].map((item, i) => (
               <motion.div
                 key={i}
@@ -349,7 +348,7 @@ export function HomePage({ user, isAdmin, onAuthClick, onNavigate }: HomePagePro
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
                 <div className="absolute bottom-0 right-0 left-0 p-3">
                   <Badge className="bg-[#1B7A3D] text-white text-[8px] mb-1 gap-1">
-                    <Megaphone className="w-2.5 h-2.5" />{isRTL ? "إعلان" : "Ad"}
+                    <Megaphone className="w-2.5 h-2.5" />{t("home.ad")}
                   </Badge>
                   <h3 className="text-sm font-bold text-white">
                     {homeBanners.length > 0 ? homeBanners[currentBanner]?.title : ads[currentAd]?.title}
@@ -375,9 +374,9 @@ export function HomePage({ user, isAdmin, onAuthClick, onNavigate }: HomePagePro
         {/* ══ 4. STATS ROW ══ */}
         <div className="grid grid-cols-3 gap-2">
           {[
-            { value: "99.9%", label: isRTL ? "نسبة النجاح" : "Success Rate", icon: TrendingUp, color: "text-emerald-500" },
-            { value: "10K+", label: isRTL ? "مستخدم نشط" : "Active Users", icon: Star, color: "text-amber-500" },
-            { value: String(vendingNetworks.length || fbNetworks.length), label: isRTL ? "شبكة متاحة" : "Networks", icon: Zap, color: "text-blue-500" },
+            { value: "99.9%", label: t("home.successRate"), icon: TrendingUp, color: "text-emerald-500" },
+            { value: "10K+", label: t("home.activeUsers"), icon: Star, color: "text-amber-500" },
+            { value: String(vendingNetworks.length || fbNetworks.length), label: t("home.networks"), icon: Zap, color: "text-blue-500" },
           ].map((stat, i) => (
             <motion.div
               key={i}
@@ -402,15 +401,15 @@ export function HomePage({ user, isAdmin, onAuthClick, onNavigate }: HomePagePro
               </div>
               <div>
                 <h2 className="text-sm font-black text-gray-900 dark:text-white">
-                  {isRTL ? "مكائن الكروت المتوفرة" : "Available Card Machines"}
+                  {t("home.availableMachines")}
                 </h2>
                 <p className="text-[10px] text-gray-400 dark:text-slate-500">
-                  {isRTL ? "شبكات بكروت متاحة الآن" : "Networks with cards available"}
+                  {t("home.networksWithCards")}
                 </p>
               </div>
             </div>
             <Badge className="bg-[#E8F5E9] dark:bg-green-900/30 text-[#1B7A3D] text-[9px] font-bold">
-              {vendingNetworks.length} {isRTL ? "مكينة" : "machines"}
+              {vendingNetworks.length} {t("home.machine")}
             </Badge>
           </div>
 
@@ -421,7 +420,7 @@ export function HomePage({ user, isAdmin, onAuthClick, onNavigate }: HomePagePro
                 onClick={() => { setSelectedProvince(null); setSelectedDistrict(null); }}
                 className={`px-3 py-1.5 rounded-xl text-[10px] font-bold whitespace-nowrap transition-all flex-shrink-0 ${!selectedProvince ? "bg-[#1B7A3D] text-white btn-green-shadow" : "bg-white dark:bg-slate-800 text-gray-500 dark:text-slate-400 card-shadow border border-gray-100 dark:border-slate-700"}`}
               >
-                <Navigation className="w-3 h-3 inline ml-1" />{isRTL ? "الكل" : "All"}
+                <Navigation className="w-3 h-3 inline ml-1" />{t("home.all")}
               </button>
               {PROVINCES.map(province => {
                 const count = fbNetworks.filter(n => n.provinceId === province.id && getAvailableCount(n.id) > 0).length;
@@ -432,7 +431,7 @@ export function HomePage({ user, isAdmin, onAuthClick, onNavigate }: HomePagePro
                     onClick={() => { if (selectedProvince === province.id) { setSelectedProvince(null); setSelectedDistrict(null); } else { setSelectedProvince(province.id); setSelectedDistrict(null); } }}
                     className={`px-3 py-1.5 rounded-xl text-[10px] font-bold whitespace-nowrap transition-all flex-shrink-0 ${selectedProvince === province.id ? "bg-orange-500 text-white shadow-md" : "bg-white dark:bg-slate-800 text-gray-500 dark:text-slate-400 card-shadow border border-gray-100 dark:border-slate-700"}`}
                   >
-                    🏛️ {province.name} ({count})
+                    🏛️ {lang === "en" && province.nameEn ? province.nameEn : province.name} ({count})
                   </button>
                 );
               })}
@@ -447,14 +446,15 @@ export function HomePage({ user, isAdmin, onAuthClick, onNavigate }: HomePagePro
                 >
                   <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
                     <button onClick={() => setSelectedDistrict(null)} className={`px-3 py-1.5 rounded-xl text-[10px] font-bold whitespace-nowrap flex-shrink-0 ${!selectedDistrict ? "bg-[#1B7A3D] text-white" : "bg-white dark:bg-slate-800 text-gray-500 dark:text-slate-400 card-shadow border border-gray-100 dark:border-slate-700"}`}>
-                      {isRTL ? "الكل" : "All"}
+                      {t("home.all")}
                     </button>
-                    {districts.map(d => {
+                    {districts.map((d, i) => {
                       const count = fbNetworks.filter(n => n.provinceId === selectedProvince && n.district === d && getAvailableCount(n.id) > 0).length;
                       if (count === 0 && selectedDistrict !== d) return null;
+                      const districtLabel = lang === "en" && districtsEn[i] ? districtsEn[i] : d;
                       return (
                         <button key={d} onClick={() => setSelectedDistrict(selectedDistrict === d ? null : d)} className={`px-3 py-1.5 rounded-xl text-[10px] font-bold whitespace-nowrap flex-shrink-0 ${selectedDistrict === d ? "bg-red-500 text-white" : "bg-white dark:bg-slate-800 text-gray-500 dark:text-slate-400 card-shadow border border-gray-100 dark:border-slate-700"}`}>
-                          📍 {d}
+                          📍 {districtLabel}
                         </button>
                       );
                     })}
@@ -472,10 +472,10 @@ export function HomePage({ user, isAdmin, onAuthClick, onNavigate }: HomePagePro
                   <Wifi className="w-6 h-6 text-gray-300 dark:text-slate-500" />
                 </div>
                 <p className="text-gray-500 dark:text-slate-400 text-sm font-bold">
-                  {isRTL ? "لا توجد مكائن متوفرة حالياً" : "No machines available"}
+                  {t("home.noMachines")}
                 </p>
                 <p className="text-gray-300 dark:text-slate-600 text-[10px] mt-1">
-                  {selectedProvince ? (isRTL ? "جرّب محافظة أخرى" : "Try another province") : (isRTL ? "سيتم إضافة كروت جديدة قريباً" : "New cards coming soon")}
+                  {selectedProvince ? t("home.tryOtherProvince") : t("home.newCardsComing")}
                 </p>
               </div>
             ) : (
@@ -504,22 +504,31 @@ export function HomePage({ user, isAdmin, onAuthClick, onNavigate }: HomePagePro
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <h3 className="text-sm font-black truncate" style={{ color: net.color }}>{net.name}</h3>
-                            {isNearby && <span className="text-[8px] bg-[#E8F5E9] dark:bg-green-900/30 text-[#1B7A3D] px-1.5 py-0.5 rounded-full font-bold">{isRTL ? "قريب" : "Nearby"}</span>}
+                            {isNearby && <span className="text-[8px] bg-[#E8F5E9] dark:bg-green-900/30 text-[#1B7A3D] px-1.5 py-0.5 rounded-full font-bold">{t("home.nearby")}</span>}
                           </div>
                           <div className="flex items-center gap-2 mt-1 flex-wrap">
-                            {net.provinceName && (
-                              <span className="text-[10px] text-gray-400 dark:text-slate-500 flex items-center gap-0.5">
-                                <Globe className="w-3 h-3" />{net.provinceName}
-                              </span>
-                            )}
-                            {net.district && (
-                              <span className="text-[10px] text-gray-400 dark:text-slate-500 flex items-center gap-0.5">
-                                <MapPin className="w-3 h-3" />{net.district}
-                              </span>
-                            )}
+                            {net.provinceName && (() => {
+                              const provObj = PROVINCES.find(p => p.id === net.provinceId);
+                              const provLabel = lang === "en" && provObj?.nameEn ? provObj.nameEn : net.provinceName;
+                              return (
+                                <span className="text-[10px] text-gray-400 dark:text-slate-500 flex items-center gap-0.5">
+                                  <Globe className="w-3 h-3" />{provLabel}
+                                </span>
+                              );
+                            })()}
+                            {net.district && (() => {
+                              const provObj = PROVINCES.find(p => p.id === net.provinceId);
+                              const distIdx = provObj ? provObj.districts.indexOf(net.district) : -1;
+                              const distLabel = lang === "en" && provObj?.districtsEn && distIdx >= 0 && provObj.districtsEn[distIdx] ? provObj.districtsEn[distIdx] : net.district;
+                              return (
+                                <span className="text-[10px] text-gray-400 dark:text-slate-500 flex items-center gap-0.5">
+                                  <MapPin className="w-3 h-3" />{distLabel}
+                                </span>
+                              );
+                            })()}
                             {net.ownerPhone && (
                               <a href={`https://wa.me/${net.ownerPhone}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-[10px] text-blue-500 flex items-center gap-0.5 hover:underline">
-                                <Phone className="w-3 h-3" />{isRTL ? "تواصل" : "Contact"}
+                                <Phone className="w-3 h-3" />{t("home.contact")}
                               </a>
                             )}
                           </div>
@@ -527,11 +536,11 @@ export function HomePage({ user, isAdmin, onAuthClick, onNavigate }: HomePagePro
                       </div>
                       <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
                         <Badge className="bg-[#E8F5E9] dark:bg-green-900/30 text-[#1B7A3D] text-[10px] font-bold">
-                          {availableCount} {isRTL ? "كرت" : "cards"}
+                          {availableCount} {t("home.cardCount")}
                         </Badge>
                         {cheapestCard && (
                           <span className="text-[9px] text-gray-400 dark:text-slate-500">
-                            {isRTL ? "يبدأ من" : "from"} {cheapestCard.price?.toLocaleString()} {isRTL ? "ر.ي" : "YER"}
+                            {t("home.from")} {cheapestCard.price?.toLocaleString()} {t("home.yer")}
                           </span>
                         )}
                         <ChevronLeft className={`w-4 h-4 text-gray-300 dark:text-slate-600 transition-transform group-hover:-translate-x-0.5 ${!isRTL ? "rotate-180" : ""}`} />
@@ -548,16 +557,16 @@ export function HomePage({ user, isAdmin, onAuthClick, onNavigate }: HomePagePro
         <div>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-black text-gray-900 dark:text-white">
-              {isRTL ? "جميع الشبكات" : "All Networks"}
+              {t("home.allNetworks")}
             </h2>
             <Badge className="bg-[#E8F5E9] dark:bg-green-900/30 text-[#1B7A3D] text-[9px]">
-              {filteredNetworks.length} {isRTL ? "شبكة" : "networks"}
+              {filteredNetworks.length} {t("home.networkCount")}
             </Badge>
           </div>
           <div className="grid grid-cols-2 gap-2">
             {filteredNetworks.length === 0 ? (
               <div className="col-span-2 bg-white dark:bg-slate-800 rounded-2xl card-shadow p-6 text-center">
-                <p className="text-gray-400 dark:text-slate-500 text-sm">{isRTL ? "لا توجد شبكات" : "No networks"}</p>
+                <p className="text-gray-400 dark:text-slate-500 text-sm">{t("home.noNetworks")}</p>
               </div>
             ) : (
               filteredNetworks.map((net, i) => {
@@ -580,15 +589,19 @@ export function HomePage({ user, isAdmin, onAuthClick, onNavigate }: HomePagePro
                       </div>
                       <div className="min-w-0 flex-1">
                         <h3 className="text-xs font-black truncate" style={{ color: net.color }}>{net.name}</h3>
-                        {net.provinceName && (
-                          <span className="text-[9px] text-gray-400 dark:text-slate-500 flex items-center gap-0.5">
-                            <Globe className="w-2.5 h-2.5" />{net.provinceName}
-                          </span>
-                        )}
+                        {net.provinceName && (() => {
+                          const provObj = PROVINCES.find(p => p.id === net.provinceId);
+                          const provLabel = lang === "en" && provObj?.nameEn ? provObj.nameEn : net.provinceName;
+                          return (
+                            <span className="text-[9px] text-gray-400 dark:text-slate-500 flex items-center gap-0.5">
+                              <Globe className="w-2.5 h-2.5" />{provLabel}
+                            </span>
+                          );
+                        })()}
                       </div>
                     </div>
                     <div className={`text-[9px] px-2 py-1 rounded-lg font-bold text-center ${availableCount > 0 ? "bg-[#E8F5E9] dark:bg-green-900/30 text-[#1B7A3D]" : "bg-gray-100 dark:bg-slate-700 text-gray-400 dark:text-slate-500"}`}>
-                      {availableCount > 0 ? `${availableCount} ${isRTL ? "كرت متاح" : "cards"}` : (isRTL ? "غير متاح" : "Unavailable")}
+                      {availableCount > 0 ? `${availableCount} ${t("home.availableCards")}` : t("home.unavailable")}
                     </div>
                   </motion.div>
                 );
@@ -603,10 +616,10 @@ export function HomePage({ user, isAdmin, onAuthClick, onNavigate }: HomePagePro
           <div className="bg-gradient-to-br from-purple-500 to-purple-700 rounded-2xl overflow-hidden shadow-md relative">
             <img src="/images/IMG-20260527-WA0042.jpg" alt="SIM" className="w-full h-28 object-cover opacity-40" />
             <div className="absolute inset-0 p-3 flex flex-col justify-between">
-              <Badge className="bg-white/20 text-white border-0 text-[8px] w-fit">{isRTL ? "قريباً" : "Coming Soon"}</Badge>
+              <Badge className="bg-white/20 text-white border-0 text-[8px] w-fit">{t("home.comingSoon")}</Badge>
               <div>
-                <p className="text-white font-black text-xs">{isRTL ? "شريحة Apple.NET" : "Apple.NET SIM"}</p>
-                <p className="text-white/70 text-[9px]">{isRTL ? "5,000 ر.ي" : "5,000 YER"}</p>
+                <p className="text-white font-black text-xs">{t("home.simCard")}</p>
+                <p className="text-white/70 text-[9px]">5,000 {t("home.yer")}</p>
               </div>
             </div>
           </div>
@@ -619,16 +632,16 @@ export function HomePage({ user, isAdmin, onAuthClick, onNavigate }: HomePagePro
               </div>
               <div>
                 <p className="text-white font-black text-[10px]">Apple.NET</p>
-                <p className="text-white/50 text-[8px]">{isRTL ? "التطبيق" : "App"}</p>
+                <p className="text-white/50 text-[8px]">{t("home.app")}</p>
               </div>
             </div>
             {appDownloadUrl ? (
               <a href={appDownloadUrl} target="_blank" rel="noopener noreferrer" className="bg-white text-[#1B7A3D] font-black text-[10px] rounded-xl py-2 text-center flex items-center justify-center gap-1 haptic-press hover:bg-white/90">
-                <Download className="w-3 h-3" />{isRTL ? "تنزيل APK" : "Download APK"}
+                <Download className="w-3 h-3" />{t("home.downloadApk")}
               </a>
             ) : (
               <div className="bg-white/10 text-white/50 text-[9px] rounded-xl py-2 text-center font-bold">
-                {isRTL ? "APK — قريباً" : "APK — Coming Soon"}
+                {t("home.apkComingSoon")}
               </div>
             )}
           </div>

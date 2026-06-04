@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Wifi, CreditCard, Wallet, ChevronLeft, Sparkles } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 
 const ONBOARDING_KEY = "applenet_onboarding_done";
 
@@ -11,45 +12,6 @@ interface OnboardingFlowProps {
   onLoginClick: () => void;
   onRegisterClick: () => void;
 }
-
-const slides = [
-  {
-    id: 0,
-    icon: Wifi,
-    color: "#1B7A3D",
-    bgColor: "#E8F5E9",
-    title: "مرحبًا بك في Apple.NET",
-    description: "تطبيق إدارة الهوت سبوت الاحترافي. اشترِ كروت الإنترنت بسهولة وأدر رصيدك بكل راحة.",
-    illustration: "wifi",
-  },
-  {
-    id: 1,
-    icon: CreditCard,
-    color: "#007AFF",
-    bgColor: "#E3F2FD",
-    title: "شراء كروت الإنترنت",
-    description: "اختر من بين فئات متعددة من كروت الإنترنت. شراء آمن وسريع مع تفعيل فوري للكروت.",
-    illustration: "cards",
-  },
-  {
-    id: 2,
-    icon: Wallet,
-    color: "#FF9500",
-    bgColor: "#FFF3E0",
-    title: "إيداع الرصيد وإدارة الحساب",
-    description: "أودع رصيدك بسهولة عبر البنوك المتاحة. تابع رصيدك وسجل معاملاتك في أي وقت.",
-    illustration: "wallet",
-  },
-  {
-    id: 3,
-    icon: Sparkles,
-    color: "#AF52DE",
-    bgColor: "#F3E5F5",
-    title: "ابدأ الآن!",
-    description: "سجل دخولك أو أنشئ حسابًا جديدًا للاستفادة من جميع ميزات Apple.NET.",
-    illustration: "start",
-  },
-];
 
 function SlideIllustration({ type, color, bgColor }: { type: string; color: string; bgColor: string }) {
   return (
@@ -145,8 +107,48 @@ function SlideIllustration({ type, color, bgColor }: { type: string; color: stri
 }
 
 export function OnboardingFlow({ onComplete, onLoginClick, onRegisterClick }: OnboardingFlowProps) {
+  const { t, isRTL } = useLanguage();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [direction, setDirection] = useState(0);
+
+  const slides = [
+    {
+      id: 0,
+      icon: Wifi,
+      color: "#1B7A3D",
+      bgColor: "#E8F5E9",
+      title: t("onboarding.welcome"),
+      description: t("onboarding.welcomeDesc"),
+      illustration: "wifi",
+    },
+    {
+      id: 1,
+      icon: CreditCard,
+      color: "#007AFF",
+      bgColor: "#E3F2FD",
+      title: t("onboarding.buyCards"),
+      description: t("onboarding.buyCardsDesc"),
+      illustration: "cards",
+    },
+    {
+      id: 2,
+      icon: Wallet,
+      color: "#FF9500",
+      bgColor: "#FFF3E0",
+      title: t("onboarding.deposit"),
+      description: t("onboarding.depositDesc"),
+      illustration: "wallet",
+    },
+    {
+      id: 3,
+      icon: Sparkles,
+      color: "#AF52DE",
+      bgColor: "#F3E5F5",
+      title: t("onboarding.getStart"),
+      description: t("onboarding.getStartDesc"),
+      illustration: "start",
+    },
+  ];
 
   // Check if already completed
   useEffect(() => {
@@ -198,7 +200,7 @@ export function OnboardingFlow({ onComplete, onLoginClick, onRegisterClick }: On
   const isLastSlide = currentSlide === slides.length - 1;
 
   return (
-    <div className="fixed inset-0 bg-white z-[200] flex flex-col" dir="rtl">
+    <div className="fixed inset-0 bg-white z-[200] flex flex-col" dir={isRTL ? "rtl" : "ltr"}>
       {/* Skip button */}
       {!isLastSlide && (
         <div className="flex justify-start p-4">
@@ -206,7 +208,7 @@ export function OnboardingFlow({ onComplete, onLoginClick, onRegisterClick }: On
             onClick={handleSkip}
             className="text-sm font-semibold text-gray-400 hover:text-gray-600 transition-colors px-3 py-1"
           >
-            تخطي
+            {t("onboarding.skip")}
           </button>
         </div>
       )}
@@ -271,20 +273,20 @@ export function OnboardingFlow({ onComplete, onLoginClick, onRegisterClick }: On
                 boxShadow: "0 2px 8px rgba(27, 122, 61, 0.3)",
               }}
             >
-              إنشاء حساب جديد
+              {t("onboarding.createAccount")}
             </motion.button>
             <motion.button
               whileTap={{ scale: 0.97 }}
               onClick={onLoginClick}
               className="w-full py-3.5 rounded-2xl font-bold text-base border-2 border-[#1B7A3D] text-[#1B7A3D] bg-[#E8F5E9]"
             >
-              تسجيل الدخول
+              {t("onboarding.signIn")}
             </motion.button>
             <button
               onClick={handleFinish}
               className="w-full py-2 text-sm text-gray-400 hover:text-gray-600 transition-colors"
             >
-              تصفح بدون حساب
+              {t("onboarding.browseNoAccount")}
             </button>
           </>
         ) : (
@@ -296,7 +298,7 @@ export function OnboardingFlow({ onComplete, onLoginClick, onRegisterClick }: On
                 className="flex items-center gap-1 text-gray-400 font-semibold text-sm"
               >
                 <ChevronLeft className="w-4 h-4 rotate-180" />
-                السابق
+                {t("onboarding.previous")}
               </motion.button>
             ) : (
               <div />
@@ -310,7 +312,7 @@ export function OnboardingFlow({ onComplete, onLoginClick, onRegisterClick }: On
                 boxShadow: `0 2px 8px ${currentSlideData.color}40`,
               }}
             >
-              التالي
+              {t("onboarding.next")}
             </motion.button>
           </div>
         )}

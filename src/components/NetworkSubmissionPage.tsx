@@ -15,6 +15,7 @@ import { db } from "@/lib/firebase";
 import { ref, push, set, onValue } from "firebase/database";
 import { PROVINCES, getDistricts, formatDate } from "@/lib/constants";
 import { compressImageToBase64 } from "@/lib/utils";
+import { useLanguage } from "@/context/LanguageContext";
 import type { NetworkSubmission } from "@/lib/types";
 import type { User } from "firebase/auth";
 import { toast } from "sonner";
@@ -51,6 +52,7 @@ const initialForm: FormState = {
 };
 
 export function NetworkSubmissionPage({ user, onAuthClick }: { user: User | null; onAuthClick: () => void }) {
+  const { t, isRTL } = useLanguage();
   const [form, setForm] = useState<FormState>(initialForm);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(true);
@@ -91,7 +93,7 @@ export function NetworkSubmissionPage({ user, onAuthClick }: { user: User | null
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      toast.error("يرجى اختيار ملف صورة");
+      toast.error(t("network.uploadImage"));
       return;
     }
     setIsUploading(true);
@@ -99,7 +101,7 @@ export function NetworkSubmissionPage({ user, onAuthClick }: { user: User | null
       const base64 = await compressImageToBase64(file, 128, 0.6);
       setNetworkImage(base64);
     } catch {
-      toast.error("فشل رفع الصورة");
+      toast.error(t("network.uploadImage"));
     }
     setIsUploading(false);
   };
@@ -109,31 +111,31 @@ export function NetworkSubmissionPage({ user, onAuthClick }: { user: User | null
 
     // Validation
     if (!form.networkName.trim()) {
-      toast.error("يرجى إدخال اسم الشبكة");
+      toast.error(t("network.networkName"));
       return;
     }
     if (!/^[a-zA-Z0-9\s\-]+$/.test(form.networkName.trim())) {
-      toast.error("اسم الشبكة يجب أن يكون باللغة الإنجليزية فقط (حروف وأرقام)");
+      toast.error(t("network.networkName"));
       return;
     }
     if (!form.provinceId) {
-      toast.error("يرجى اختيار المحافظة");
+      toast.error(t("network.selectProvince"));
       return;
     }
     if (!form.district) {
-      toast.error("يرجى اختيار المديرية");
+      toast.error(t("network.selectDistrict"));
       return;
     }
     if (!form.exactLocation.trim()) {
-      toast.error("يرجى إدخال الموقع بالتفصيل");
+      toast.error(t("network.exactLocation"));
       return;
     }
     if (!form.networkType) {
-      toast.error("يرجى اختيار نوع الشبكة");
+      toast.error(t("network.networkType"));
       return;
     }
     if (!form.phone.trim()) {
-      toast.error("يرجى إدخال رقم الهاتف");
+      toast.error(t("network.phoneNumber"));
       return;
     }
 
@@ -168,18 +170,18 @@ export function NetworkSubmissionPage({ user, onAuthClick }: { user: User | null
       const notifRef = push(ref(db, "notifications/admin"));
       await set(notifRef, {
         type: "general",
-        title: "طلب تسجيل شبكة جديد 🌐",
-        message: `${user.displayName || user.email} يطلب تسجيل شبكة "${form.networkName}" في ${province?.name || ""} - ${form.district}`,
+        title: t("network.submitNew"),
+        message: `${user.displayName || user.email} - ${form.networkName} - ${province?.name || ""} - ${form.district}`,
         isRead: false,
         createdAt: Date.now(),
         relatedId: submissionRef.key,
       });
 
-      toast.success("تم تقديم طلب الشبكة بنجاح! سيتم مراجعته من قبل الإدارة");
+      toast.success(t("network.submit"));
       setForm(initialForm);
       setNetworkImage("");
     } catch {
-      toast.error("حدث خطأ أثناء تقديم الطلب، حاول مرة أخرى");
+      toast.error(t("common.error"));
     }
     setIsSubmitting(false);
   };
@@ -190,21 +192,21 @@ export function NetworkSubmissionPage({ user, onAuthClick }: { user: User | null
         return (
           <Badge className="bg-yellow-50 text-yellow-600 border-yellow-200 text-[10px]">
             <Clock className="w-3 h-3 ml-1" />
-            قيد المراجعة
+            {t("network.pending")}
           </Badge>
         );
       case "approved":
         return (
           <Badge className="bg-[#E8F5E9] text-[#1B7A3D] border-green-200 text-[10px]">
             <CheckCircle2 className="w-3 h-3 ml-1" />
-            تمت الموافقة
+            ✓
           </Badge>
         );
       case "rejected":
         return (
           <Badge className="bg-red-50 text-red-500 border-red-200 text-[10px]">
             <XCircle className="w-3 h-3 ml-1" />
-            مرفوض
+            ✗
           </Badge>
         );
       default:
@@ -213,24 +215,29 @@ export function NetworkSubmissionPage({ user, onAuthClick }: { user: User | null
   };
 
   const getNetworkTypeLabel = (type: string) => {
-    const found = NETWORK_TYPES.find(t => t.id === type);
-    return found ? `${found.icon} ${found.label}` : type;
+    const typeKeyMap: Record<string, string> = {
+      wifi: t("network.wifi"),
+      fiber: t("network.fiber"),
+      "4g_lte": t("network.lte"),
+      satellite: t("network.satellite"),
+    };
+    return typeKeyMap[type] || type;
   };
 
   // Login prompt if no user
   if (!user) {
     return (
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="px-4 pt-16 text-center">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="px-4 pt-16 text-center" dir={isRTL ? "rtl" : "ltr"}>
         <div className="bg-[#E8F5E9] rounded-2xl p-8">
           <Wifi className="w-16 h-16 mx-auto text-[#1B7A3D]/30 mb-4" />
-          <h2 className="text-xl font-bold text-gray-900 mb-2">سجل الدخول أولاً</h2>
-          <p className="text-gray-500 text-sm mb-4">يجب تسجيل الدخول لتقديم طلب تسجيل شبكة</p>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">{t("network.loginFirst")}</h2>
+          <p className="text-gray-500 text-sm mb-4">{t("network.mustLogin")}</p>
           <Button
             onClick={onAuthClick}
             className="bg-gradient-to-l from-[#1B7A3D] to-[#22A24D] text-white font-bold rounded-xl"
           >
             <LogIn className="w-4 h-4 ml-2" />
-            تسجيل الدخول
+            {t("auth.login")}
           </Button>
         </div>
       </motion.div>
@@ -244,6 +251,7 @@ export function NetworkSubmissionPage({ user, onAuthClick }: { user: User | null
       exit={{ opacity: 0 }}
       transition={{ type: "spring", stiffness: 120, damping: 14 }}
       className="px-4 pt-4"
+      dir={isRTL ? "rtl" : "ltr"}
     >
       {/* Header Card */}
       <div className="bg-gradient-to-bl from-[#1B7A3D] to-[#22A24D] rounded-2xl p-6 text-center mb-4 card-shadow-lg relative overflow-hidden">
@@ -255,10 +263,10 @@ export function NetworkSubmissionPage({ user, onAuthClick }: { user: User | null
         <div className="relative z-10">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Wifi className="w-6 h-6 text-white/80" />
-            <p className="text-white/80 text-sm">سجّل شبكتك</p>
+            <p className="text-white/80 text-sm">{t("network.registerNetwork")}</p>
           </div>
-          <h2 className="text-2xl font-black text-white mb-1">تقديم شبكة جديدة</h2>
-          <p className="text-white/60 text-xs">قدّم طلب تسجيل شبكتك وسيتم مراجعته من قبل الإدارة</p>
+          <h2 className="text-2xl font-black text-white mb-1">{t("network.submitNew")}</h2>
+          <p className="text-white/60 text-xs">{t("network.submitDesc")}</p>
         </div>
       </div>
 
@@ -272,9 +280,9 @@ export function NetworkSubmissionPage({ user, onAuthClick }: { user: User | null
           <Plus className="w-6 h-6 text-white" />
         </div>
         <div className="flex-1 text-right">
-          <p className="text-sm font-black text-gray-900">نموذج التسجيل</p>
+          <p className="text-sm font-black text-gray-900">{t("network.form")}</p>
           <p className="text-[10px] text-gray-400">
-            {showForm ? "اضغط لإخفاء النموذج" : "اضغط لتعبئة بيانات الشبكة"}
+            {showForm ? t("network.hideForm") : t("network.fillData")}
           </p>
         </div>
         {showForm ? (
@@ -299,7 +307,7 @@ export function NetworkSubmissionPage({ user, onAuthClick }: { user: User | null
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
                   <Wifi className="w-3.5 h-3.5 text-[#1B7A3D]" />
-                  اسم الشبكة <span className="text-red-400">*</span>
+                  {t("network.networkName")} <span className="text-red-400">*</span>
                 </label>
                 <Input
                   value={form.networkName}
@@ -311,26 +319,21 @@ export function NetworkSubmissionPage({ user, onAuthClick }: { user: User | null
                     }
                   }}
                   className="bg-gray-50 border-gray-200 text-gray-900 rounded-xl h-11"
-                  placeholder="مثال: Apple Net"
+                  placeholder="Apple Net"
                   dir="ltr"
                 />
-                <p className="text-[9px] text-gray-400 flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" />
-                  اسم الشبكة يجب أن يكون باللغة الإنجليزية فقط
-                </p>
-                <p className="text-[10px] text-gray-400 mt-1">⚠️ يجب كتابة اسم الشبكة باللغة الإنجليزية فقط</p>
               </div>
 
               {/* Network Image Upload */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
                   <ImageIcon className="w-3.5 h-3.5 text-[#1B7A3D]" />
-                  أيقونة الشبكة (اختياري)
+                  {t("network.networkIcon")}
                 </label>
                 <div className="flex items-center gap-3">
                   {networkImage ? (
                     <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 border-2 border-[#1B7A3D]/20">
-                      <img src={networkImage} alt="أيقونة الشبكة" className="w-full h-full object-cover" />
+                      <img src={networkImage} alt={t("network.networkIcon")} className="w-full h-full object-cover" />
                       <button
                         onClick={() => setNetworkImage("")}
                         className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center shadow-sm"
@@ -363,10 +366,9 @@ export function NetworkSubmissionPage({ user, onAuthClick }: { user: User | null
                       />
                       <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#1B7A3D] hover:text-[#165E30] transition-colors">
                         <Upload className="w-3.5 h-3.5" />
-                        {networkImage ? "تغيير الصورة" : "رفع صورة"}
+                        {networkImage ? t("network.changeImage") : t("network.uploadImage")}
                       </span>
                     </label>
-                    <p className="text-[9px] text-gray-400 mt-0.5">يتم ضغط الصورة تلقائياً (أقصى حجم 128px)</p>
                   </div>
                 </div>
               </div>
@@ -375,14 +377,14 @@ export function NetworkSubmissionPage({ user, onAuthClick }: { user: User | null
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
                   <Building2 className="w-3.5 h-3.5 text-[#1B7A3D]" />
-                  المحافظة <span className="text-red-400">*</span>
+                  {t("network.province")} <span className="text-red-400">*</span>
                 </label>
                 <select
                   value={form.provinceId}
                   onChange={(e) => setForm(prev => ({ ...prev, provinceId: e.target.value }))}
                   className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl h-11 px-3 text-sm appearance-none cursor-pointer"
                 >
-                  <option value="">اختر المحافظة</option>
+                  <option value="">{t("network.selectProvince")}</option>
                   {PROVINCES.map(province => (
                     <option key={province.id} value={province.id}>
                       {province.isCapital ? "⭐ " : ""}{province.name}
@@ -395,7 +397,7 @@ export function NetworkSubmissionPage({ user, onAuthClick }: { user: User | null
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
                   <MapPin className="w-3.5 h-3.5 text-[#1B7A3D]" />
-                  المديرية <span className="text-red-400">*</span>
+                  {t("network.district")} <span className="text-red-400">*</span>
                 </label>
                 <select
                   value={form.district}
@@ -404,7 +406,7 @@ export function NetworkSubmissionPage({ user, onAuthClick }: { user: User | null
                   className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl h-11 px-3 text-sm appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <option value="">
-                    {form.provinceId ? "اختر المديرية" : "اختر المحافظة أولاً"}
+                    {form.provinceId ? t("network.selectDistrict") : t("network.selectProvinceFirst")}
                   </option>
                   {districts.map(d => (
                     <option key={d} value={d}>{d}</option>
@@ -416,13 +418,13 @@ export function NetworkSubmissionPage({ user, onAuthClick }: { user: User | null
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
                   <MapPin className="w-3.5 h-3.5 text-[#1B7A3D]" />
-                  الموقع بالتفصيل <span className="text-red-400">*</span>
+                  {t("network.exactLocation")} <span className="text-red-400">*</span>
                 </label>
                 <Input
                   value={form.exactLocation}
                   onChange={(e) => setForm(prev => ({ ...prev, exactLocation: e.target.value }))}
                   className="bg-gray-50 border-gray-200 text-gray-900 rounded-xl h-11"
-                  placeholder="مثال: شارع الرئيسي، بجوار المسجد الكبير"
+                  placeholder={t("network.exactLocation")}
                 />
               </div>
 
@@ -430,25 +432,33 @@ export function NetworkSubmissionPage({ user, onAuthClick }: { user: User | null
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
                   <Signal className="w-3.5 h-3.5 text-[#1B7A3D]" />
-                  نوع الشبكة <span className="text-red-400">*</span>
+                  {t("network.networkType")} <span className="text-red-400">*</span>
                 </label>
                 <div className="grid grid-cols-2 gap-2">
-                  {NETWORK_TYPES.map(type => (
-                    <motion.button
-                      key={type.id}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => setForm(prev => ({ ...prev, networkType: type.id }))}
-                      className={`p-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all border-2 ${
-                        form.networkType === type.id
-                          ? "bg-[#E8F5E9] border-[#1B7A3D] text-[#1B7A3D]"
-                          : "bg-gray-50 border-gray-200 text-gray-600 hover:border-gray-300"
-                      }`}
-                    >
-                      <span className="text-base">{type.icon}</span>
-                      {type.label}
-                      {form.networkType === type.id && <Check className="w-3.5 h-3.5 mr-1" />}
-                    </motion.button>
-                  ))}
+                  {NETWORK_TYPES.map(type => {
+                    const typeKeyMap: Record<string, string> = {
+                      wifi: t("network.wifi"),
+                      fiber: t("network.fiber"),
+                      "4g_lte": t("network.lte"),
+                      satellite: t("network.satellite"),
+                    };
+                    return (
+                      <motion.button
+                        key={type.id}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => setForm(prev => ({ ...prev, networkType: type.id }))}
+                        className={`p-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all border-2 ${
+                          form.networkType === type.id
+                            ? "bg-[#E8F5E9] border-[#1B7A3D] text-[#1B7A3D]"
+                            : "bg-gray-50 border-gray-200 text-gray-600 hover:border-gray-300"
+                        }`}
+                      >
+                        <span className="text-base">{type.icon}</span>
+                        {typeKeyMap[type.id] || type.label}
+                        {form.networkType === type.id && <Check className="w-3.5 h-3.5 mr-1" />}
+                      </motion.button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -457,7 +467,7 @@ export function NetworkSubmissionPage({ user, onAuthClick }: { user: User | null
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
                     <Signal className="w-3 h-3 text-[#1B7A3D]" />
-                    التغطية
+                    {t("network.coverage")}
                   </label>
                   <Input
                     value={form.coverage}
@@ -469,7 +479,7 @@ export function NetworkSubmissionPage({ user, onAuthClick }: { user: User | null
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
                     <Gauge className="w-3 h-3 text-[#1B7A3D]" />
-                    السرعة
+                    {t("network.speed")}
                   </label>
                   <Input
                     value={form.speed}
@@ -484,13 +494,13 @@ export function NetworkSubmissionPage({ user, onAuthClick }: { user: User | null
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
                   <BookOpen className="w-3.5 h-3.5 text-[#1B7A3D]" />
-                  وصف إضافي
+                  {t("network.additionalDesc")}
                 </label>
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
                   className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl px-3 py-2.5 text-sm min-h-[80px] resize-none focus:outline-none focus:ring-2 focus:ring-[#1B7A3D]/30 focus:border-[#1B7A3D] transition-all"
-                  placeholder="أضف أي تفاصيل إضافية عن شبكتك..."
+                  placeholder={t("network.additionalDesc")}
                 />
               </div>
 
@@ -498,7 +508,7 @@ export function NetworkSubmissionPage({ user, onAuthClick }: { user: User | null
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5">
                   <Phone className="w-3.5 h-3.5 text-[#1B7A3D]" />
-                  رقم الهاتف <span className="text-red-400">*</span>
+                  {t("network.phoneNumber")} <span className="text-red-400">*</span>
                 </label>
                 <Input
                   value={form.phone}
@@ -524,13 +534,13 @@ export function NetworkSubmissionPage({ user, onAuthClick }: { user: User | null
                 ) : (
                   <>
                     <Send className="w-5 h-5 ml-2" />
-                    تقديم الطلب
+                    {t("network.submit")}
                   </>
                 )}
               </Button>
 
               <p className="text-[10px] text-gray-400 text-center">
-                سيتم مراجعة طلبك من قبل الإدارة والموافقة عليه أو رفضه
+                {t("network.submitNote")}
               </p>
             </div>
           </motion.div>
@@ -549,12 +559,12 @@ export function NetworkSubmissionPage({ user, onAuthClick }: { user: User | null
               <FileText className="w-6 h-6 text-gray-500" />
             </div>
             <div className="flex-1 text-right">
-              <p className="text-sm font-black text-gray-900">طلباتي السابقة</p>
-              <p className="text-[10px] text-gray-400">{mySubmissions.length} طلب</p>
+              <p className="text-sm font-black text-gray-900">{t("network.myRequests")}</p>
+              <p className="text-[10px] text-gray-400">{mySubmissions.length}</p>
             </div>
             <div className="flex items-center gap-2">
               <Badge className="bg-[#E8F5E9] text-[#1B7A3D] text-[9px]">
-                {mySubmissions.filter(s => s.status === "pending").length} قيد المراجعة
+                {mySubmissions.filter(s => s.status === "pending").length} {t("network.pending")}
               </Badge>
               {showSubmissions ? (
                 <ChevronUp className="w-5 h-5 text-gray-400" />
@@ -657,7 +667,7 @@ export function NetworkSubmissionPage({ user, onAuthClick }: { user: User | null
                         <div className="mt-2 bg-[#E8F5E9] rounded-lg p-2 flex items-start gap-1.5">
                           <CheckCircle2 className="w-3.5 h-3.5 text-[#1B7A3D] mt-0.5 flex-shrink-0" />
                           <p className="text-[10px] text-[#1B7A3D] leading-relaxed">
-                            تم إنشاء الشبكة وتعيينك كمدير لها
+                            ✓
                           </p>
                         </div>
                       )}
@@ -677,9 +687,9 @@ export function NetworkSubmissionPage({ user, onAuthClick }: { user: User | null
             <AlertCircle className="w-5 h-5 text-[#1B7A3D]" />
           </div>
           <div>
-            <h3 className="text-[#1B7A3D] font-bold mb-1 text-sm">كيف تعمل تقديمات الشبكات؟</h3>
+            <h3 className="text-[#1B7A3D] font-bold mb-1 text-sm">{t("network.howItWorks")}</h3>
             <p className="text-xs text-gray-500 leading-relaxed">
-              بعد تقديم طلب تسجيل شبكتك، سيقوم فريق الإدارة بمراجعة البيانات والتحقق منها. في حال الموافقة، سيتم إنشاء الشبكة في النظام وتعيينك كمدير لها. في حال الرفض، سيتم إبلاغك بالسبب.
+              {t("network.submitNote")}
             </p>
           </div>
         </div>
@@ -703,12 +713,13 @@ export function NetworkSubmissionPage({ user, onAuthClick }: { user: User | null
               transition={{ type: "spring", stiffness: 120, damping: 14 }}
               className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-[9998] shadow-2xl"
               style={{ maxHeight: "80vh", display: "flex", flexDirection: "column" }}
+              dir={isRTL ? "rtl" : "ltr"}
             >
               <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
                 <div className="w-10 h-1 rounded-full bg-gray-300" />
               </div>
               <div className="px-5 pb-3 flex items-center justify-between border-b border-gray-100 flex-shrink-0">
-                <h3 className="text-lg font-black text-gray-900">تفاصيل الطلب</h3>
+                <h3 className="text-lg font-black text-gray-900">{t("network.requestDetails")}</h3>
                 <button onClick={() => setSelectedSubmission(null)} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
                   <X className="w-4 h-4 text-gray-500" />
                 </button>
@@ -729,18 +740,17 @@ export function NetworkSubmissionPage({ user, onAuthClick }: { user: User | null
                 </div>
                 <div className="space-y-2 bg-gray-50 rounded-xl p-3">
                   {[
-                    { label: "المحافظة", value: selectedSubmission.provinceName || "-" },
-                    { label: "المديرية", value: selectedSubmission.district || "-" },
-                    { label: "الموقع", value: selectedSubmission.exactLocation || "-" },
-                    { label: "نوع الشبكة", value: getNetworkTypeLabel(selectedSubmission.networkType) },
-                    { label: "التغطية", value: selectedSubmission.coverage || "-" },
-                    { label: "السرعة", value: selectedSubmission.speed || "-" },
-                    { label: "الهاتف", value: selectedSubmission.userPhone || "-" },
-                    { label: "تاريخ التقديم", value: selectedSubmission.createdAt ? formatDate(selectedSubmission.createdAt) : "-" },
+                    { label: t("network.province"), value: selectedSubmission.provinceName || "-" },
+                    { label: t("network.district"), value: selectedSubmission.district || "-" },
+                    { label: t("network.exactLocation"), value: selectedSubmission.exactLocation || "-" },
+                    { label: t("network.networkType"), value: getNetworkTypeLabel(selectedSubmission.networkType) },
+                    { label: t("network.coverage"), value: selectedSubmission.coverage || "-" },
+                    { label: t("network.speed"), value: selectedSubmission.speed || "-" },
+                    { label: t("network.phoneNumber"), value: selectedSubmission.userPhone || "-" },
                   ].map((item, i) => (
                     <div key={i} className="flex items-center justify-between py-1 border-b border-gray-100 last:border-0">
                       <span className="text-[10px] text-gray-400">{item.label}</span>
-                      <span className="text-[10px] font-bold text-gray-700" dir={item.label === "الهاتف" ? "ltr" : undefined}>{item.value}</span>
+                      <span className="text-[10px] font-bold text-gray-700" dir={item.label === t("network.phoneNumber") ? "ltr" : undefined}>{item.value}</span>
                     </div>
                   ))}
                 </div>
@@ -751,7 +761,6 @@ export function NetworkSubmissionPage({ user, onAuthClick }: { user: User | null
                 )}
                 {selectedSubmission.status === "rejected" && selectedSubmission.rejectionReason && (
                   <div className="bg-red-50 rounded-xl p-3 border border-red-100">
-                    <p className="text-xs font-bold text-red-700 mb-1">سبب الرفض:</p>
                     <p className="text-xs text-red-600">{selectedSubmission.rejectionReason}</p>
                   </div>
                 )}

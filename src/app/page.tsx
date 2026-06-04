@@ -34,7 +34,7 @@ import {
 import { ref, get, onValue, update } from "firebase/database";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { PROVINCES, getDistricts } from "@/lib/constants";
+import { PROVINCES, getDistricts, getDistrictsEn } from "@/lib/constants";
 
 import { AppleNetLogo } from "@/components/AppleNetLogo";
 import { AuthForm } from "@/components/AuthForm";
@@ -305,8 +305,8 @@ export default function AppleNetApp() {
                   <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center mx-auto mb-3">
                     <MapPin className="w-7 h-7 text-white" />
                   </div>
-                  <h2 className="text-xl font-black text-white mb-1">اختر موقعك</h2>
-                  <p className="text-white/70 text-xs leading-relaxed">حدد محافظتك ومديريتك لعرض الشبكات القريبة منك</p>
+                  <h2 className="text-xl font-black text-white mb-1">{t("location.title")}</h2>
+                  <p className="text-white/70 text-xs leading-relaxed">{t("location.subtitle")}</p>
                 </div>
               </div>
 
@@ -314,7 +314,7 @@ export default function AppleNetApp() {
               <div className="p-5 space-y-4">
                 {/* Province */}
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1.5 font-bold">المحافظة</label>
+                  <label className="block text-xs text-gray-500 mb-1.5 font-bold">{t("location.province")}</label>
                   <div className="relative">
                     <Globe className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <select
@@ -322,9 +322,9 @@ export default function AppleNetApp() {
                       onChange={(e) => { setLocationModalProvinceId(e.target.value); setLocationModalDistrict(""); }}
                       className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl h-12 text-sm pr-10 pl-4 focus:border-[#1B7A3D] focus:ring-[#1B7A3D] appearance-none"
                     >
-                      <option value="">اختر المحافظة</option>
+                      <option value="">{t("location.selectProvince")}</option>
                       {PROVINCES.map(p => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
+                        <option key={p.id} value={p.id}>{lang === "en" && p.nameEn ? p.nameEn : p.name}</option>
                       ))}
                     </select>
                   </div>
@@ -332,7 +332,7 @@ export default function AppleNetApp() {
 
                 {/* District */}
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1.5 font-bold">المديرية</label>
+                  <label className="block text-xs text-gray-500 mb-1.5 font-bold">{t("location.district")}</label>
                   <div className="relative">
                     <Building2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <select
@@ -341,10 +341,14 @@ export default function AppleNetApp() {
                       disabled={!locationModalProvinceId}
                       className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl h-12 text-sm pr-10 pl-4 focus:border-[#1B7A3D] focus:ring-[#1B7A3D] appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <option value="">{locationModalProvinceId ? "اختر المديرية" : "اختر المحافظة أولاً"}</option>
-                      {locationModalProvinceId && getDistricts(locationModalProvinceId).map(d => (
-                        <option key={d} value={d}>{d}</option>
-                      ))}
+                      <option value="">{locationModalProvinceId ? t("location.selectDistrict") : t("location.selectProvinceFirst")}</option>
+                      {locationModalProvinceId && (() => {
+                        const districtNames = lang === "en" ? getDistrictsEn(locationModalProvinceId) : getDistricts(locationModalProvinceId);
+                        const districtValues = getDistricts(locationModalProvinceId);
+                        return districtValues.map((d, i) => (
+                          <option key={d} value={d}>{districtNames[i]}</option>
+                        ));
+                      })()}
                     </select>
                   </div>
                 </div>
@@ -354,7 +358,7 @@ export default function AppleNetApp() {
                   <Button
                     onClick={async () => {
                       if (!locationModalProvinceId) {
-                        toast.error("يرجى اختيار المحافظة");
+                        toast.error(t("location.selectProvinceFirst"));
                         return;
                       }
                       setLocationModalSaving(true);
@@ -365,11 +369,11 @@ export default function AppleNetApp() {
                           provinceName: provinceObj?.name || null,
                           district: locationModalDistrict || null,
                         });
-                        toast.success("تم حفظ موقعك بنجاح");
+                        toast.success(t("location.savedSuccess"));
                         setShowLocationModal(false);
                         setLocationModalDismissed(true);
                       } catch {
-                        toast.error("حدث خطأ أثناء الحفظ");
+                        toast.error(t("location.saveError"));
                       }
                       setLocationModalSaving(false);
                     }}
@@ -379,9 +383,9 @@ export default function AppleNetApp() {
                     {locationModalSaving ? (
                       <span className="flex items-center gap-2">
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        جاري الحفظ...
+                        {t("location.saving")}
                       </span>
-                    ) : "حفظ"}
+                    ) : t("location.save")}
                   </Button>
                   <Button
                     variant="ghost"
@@ -391,7 +395,7 @@ export default function AppleNetApp() {
                     }}
                     className="w-full text-gray-400 font-bold rounded-xl h-10 text-sm hover:text-gray-600"
                   >
-                    تخطي
+                    {t("location.skip")}
                   </Button>
                 </div>
               </div>
@@ -423,7 +427,7 @@ export default function AppleNetApp() {
             {user ? (
               <motion.button
                 whileTap={{ scale: 0.85 }}
-                onClick={async () => { await signOut(auth); toast.success(isRTL ? "تم تسجيل الخروج" : "Signed out"); }}
+                onClick={async () => { await signOut(auth); toast.success(t("auth.logout")); }}
                 className="w-10 h-10 rounded-2xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors haptic-press"
               >
                 <LogOut className="w-4 h-4 text-red-500" />
@@ -478,7 +482,7 @@ export default function AppleNetApp() {
                         <span className="text-white font-black text-base">{(userName || "م")[0].toUpperCase()}</span>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{userName || (isRTL ? "مستخدم" : "User")}</p>
+                        <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{userName || t("profile.user")}</p>
                         <p className="text-[10px] text-gray-400 dark:text-slate-500 truncate" dir="ltr">{user.email}</p>
                       </div>
                     </div>

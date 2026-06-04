@@ -66,7 +66,7 @@ export function PermissionModal() {
               <div className="px-6 pt-5 pb-8">
                 <div className="flex items-center justify-between mb-5">
                   <h2 className="text-lg font-black text-gray-900 dark:text-white">
-                    {isRTL ? "الأذونات والإشعارات" : "Permissions & Notifications"}
+                    {t("permissions2.title")}
                   </h2>
                   <button
                     onClick={handleDismiss}
@@ -79,22 +79,22 @@ export function PermissionModal() {
                 <div className="space-y-3 mb-6">
                   <PermissionItem
                     icon={<BellRing className="w-5 h-5 text-[#1B7A3D]" />}
-                    title={isRTL ? "الإشعارات الفورية" : "Push Notifications"}
-                    desc={isRTL ? "ابق على اطلاع بحالة طلباتك والعروض والتحديثات" : "Stay updated on orders, offers, and important updates"}
+                    title={t("permissions2.pushNotifications")}
+                    desc={t("permissions2.pushDesc")}
                     status={notifStatus}
                     bgColor="bg-[#E8F5E9] dark:bg-green-900/30"
                   />
                   <PermissionItem
                     icon={<Camera className="w-5 h-5 text-blue-500" />}
-                    title={isRTL ? "الكاميرا والصور" : "Camera & Photos"}
-                    desc={isRTL ? "لتحميل صور وثائق حسابك" : "To upload account documents and photos"}
+                    title={t("permissions2.cameraPhotos")}
+                    desc={t("permissions2.cameraDesc")}
                     status="idle"
                     bgColor="bg-blue-50 dark:bg-blue-900/30"
                   />
                   <PermissionItem
                     icon={<MapPin className="w-5 h-5 text-orange-500" />}
-                    title={isRTL ? "الموقع الجغرافي" : "Location"}
-                    desc={isRTL ? "لعرض الشبكات القريبة منك" : "To show nearby networks in your area"}
+                    title={t("permissions2.location")}
+                    desc={t("permissions2.locationDesc")}
                     status="idle"
                     bgColor="bg-orange-50 dark:bg-orange-900/30"
                   />
@@ -103,9 +103,7 @@ export function PermissionModal() {
                 <div className="flex items-center gap-2 mb-5 p-3 bg-gray-50 dark:bg-slate-800 rounded-2xl">
                   <Shield className="w-4 h-4 text-[#1B7A3D] flex-shrink-0" />
                   <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
-                    {isRTL
-                      ? "بياناتك آمنة ومحمية. يمكنك تغيير هذه الإعدادات في أي وقت من الملف الشخصي"
-                      : "Your data is safe and protected. You can change these settings anytime from your profile."}
+                    {t("permissions2.dataSafe")}
                   </p>
                 </div>
 
@@ -115,7 +113,7 @@ export function PermissionModal() {
                     onClick={handleDismiss}
                     className="flex-1 rounded-2xl h-12 font-bold text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-slate-700"
                   >
-                    {isRTL ? "لاحقاً" : "Later"}
+                    {t("permissions2.later")}
                   </Button>
                   <Button
                     onClick={handleAllow}
@@ -125,17 +123,17 @@ export function PermissionModal() {
                     {notifStatus === "loading" ? (
                       <span className="flex items-center gap-2">
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        {isRTL ? "جاري التفعيل..." : "Enabling..."}
+                        {t("permissions2.enabling")}
                       </span>
                     ) : notifStatus === "granted" ? (
                       <span className="flex items-center gap-2">
                         <CheckCircle className="w-4 h-4" />
-                        {isRTL ? "تم التفعيل" : "Enabled!"}
+                        {t("permissions2.enabled")}
                       </span>
                     ) : (
                       <span className="flex items-center gap-2">
                         <Bell className="w-4 h-4" />
-                        {isRTL ? "السماح للجميع" : "Allow All"}
+                        {t("permissions2.allowAll")}
                       </span>
                     )}
                   </Button>

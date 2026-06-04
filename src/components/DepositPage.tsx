@@ -16,6 +16,7 @@ import { ADMIN_WHATSAPP, generateWhatsAppLink, formatDate } from "@/lib/constant
 import { compressImageToBase64, sanitizeInput, isValidAmount } from "@/lib/utils";
 import type { BankDetail, DepositRequest, AppUser } from "@/lib/types";
 import type { User } from "firebase/auth";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface DepositPageProps {
   user: User | null;
@@ -23,6 +24,7 @@ interface DepositPageProps {
 }
 
 export function DepositPage({ user, onAuthClick }: DepositPageProps) {
+  const { t, isRTL } = useLanguage();
   const [banks, setBanks] = useState<BankDetail[]>([]);
   const [selectedBankId, setSelectedBankId] = useState("");
   const [amount, setAmount] = useState("");
@@ -70,7 +72,6 @@ export function DepositPage({ user, onAuthClick }: DepositPageProps) {
 
   useEffect(() => {
     if (user) {
-      // قراءة طلبات إيداع المستخدم فقط (بدون تحميل كل الطلبات)
       const userDepositsRef = query(ref(db, "depositRequests"), orderByChild("userId"), equalTo(user.uid));
       const unsub = onValue(userDepositsRef, (snap) => {
         const data = snap.val();
@@ -95,13 +96,13 @@ export function DepositPage({ user, onAuthClick }: DepositPageProps) {
 
     // Validate file type
     if (!file.type.startsWith("image/")) {
-      toast.error("يرجى اختيار صورة فقط");
+      toast.error(t("deposit.imageOnly"));
       return;
     }
 
     // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
-      toast.error("حجم الصورة كبير جداً. الحد الأقصى 10 ميجابايت");
+      toast.error(t("deposit.imageTooLarge"));
       return;
     }
 
@@ -114,7 +115,7 @@ export function DepositPage({ user, onAuthClick }: DepositPageProps) {
       setReceiptPreview(previewUrl);
       setIsCompressing(false);
     } catch {
-      toast.error("حدث خطأ في معالجة الصورة");
+      toast.error(t("deposit.imageError"));
       setIsCompressing(false);
     }
   };
@@ -128,26 +129,26 @@ export function DepositPage({ user, onAuthClick }: DepositPageProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !selectedBankId || !amount || !referenceNumber) {
-      toast.error("يرجى ملء جميع الحقول");
+      toast.error(t("deposit.fillAllFields"));
       return;
     }
     const depositAmount = Number(amount);
     if (!isValidAmount(depositAmount, MIN_DEPOSIT, maxBalance > 0 ? maxBalance : undefined)) {
       if (depositAmount <= 0 || isNaN(depositAmount)) {
-        toast.error("أدخل مبلغ صحيح");
+        toast.error(t("deposit.enterValidAmount"));
       } else if (depositAmount < MIN_DEPOSIT) {
-        toast.error(`الحد الأدنى للإيداع ${MIN_DEPOSIT} ر.ي`);
+        toast.error(`${t("deposit.minAmount")} ${MIN_DEPOSIT} ر.ي`);
       } else if (maxBalance > 0 && depositAmount > maxBalance) {
-        toast.error(`الحد الأقصى للإيداع ${maxBalance.toLocaleString()} ر.ي`);
+        toast.error(`${t("deposit.maxAmount")} ${maxBalance.toLocaleString()} ر.ي`);
       } else {
-        toast.error("المبلغ غير صالح");
+        toast.error(t("deposit.invalidAmount"));
       }
       return;
     }
     // Sanitize reference number
     const sanitizedRef = sanitizeInput(referenceNumber);
     if (!sanitizedRef) {
-      toast.error("رقم العملية المرجعي غير صالح");
+      toast.error(t("deposit.invalidRef"));
       return;
     }
 
@@ -159,7 +160,7 @@ export function DepositPage({ user, onAuthClick }: DepositPageProps) {
         try {
           receiptBase64 = await compressImageToBase64(receiptFile, 512, 0.6);
         } catch {
-          toast.error("حدث خطأ في ضغط الصورة");
+          toast.error(t("deposit.compressError"));
           setSubmitting(false);
           return;
         }
@@ -197,10 +198,12 @@ export function DepositPage({ user, onAuthClick }: DepositPageProps) {
         relatedId: reqRef.key,
       });
 
-      toast.success("تم تقديم طلب الإيداع بنجاح! سيتم توجيهك للواتساب");
+      toast.success(t("deposit.submitSuccess"));
 
-      // Generate WhatsApp message and redirect
-      const whatsappMessage = `🏦 طلب إيداع Apple.NET\n\n👤 الاسم: ${requestData.userName}\n📧 البريد: ${user.email}\n💰 المبلغ: ${depositAmount} ريال يمني\n🔢 رقم العملية المرجعي: ${referenceNumber}\n🏦 البنك: ${selectedBank?.bankName}${receiptBase64 ? "\n📸 تم إرفاق إيصال" : ""}\n\n⏰ التاريخ: ${new Date().toLocaleString("ar-YE")}\n\n✅ في انتظار تأكيد الأدمن`;
+      // Generate WhatsApp message — kept in Arabic for admin, bilingual approach
+      const whatsappMessage = isRTL
+        ? `🏦 طلب إيداع Apple.NET\n\n👤 الاسم: ${requestData.userName}\n📧 البريد: ${user.email}\n💰 المبلغ: ${depositAmount} ريال يمني\n🔢 رقم العملية المرجعي: ${referenceNumber}\n🏦 البنك: ${selectedBank?.bankName}${receiptBase64 ? "\n📸 تم إرفاق إيصال" : ""}\n\n⏰ التاريخ: ${new Date().toLocaleString("ar-YE")}\n\n✅ في انتظار تأكيد الأدمن`
+        : `🏦 Deposit Request - Apple.NET\n\n👤 Name: ${requestData.userName}\n📧 Email: ${user.email}\n💰 Amount: ${depositAmount} YER\n🔢 Reference: ${referenceNumber}\n🏦 Bank: ${selectedBank?.bankName}${receiptBase64 ? "\n📸 Receipt attached" : ""}\n\n⏰ Date: ${new Date().toLocaleString("en-US")}\n\n✅ Awaiting admin confirmation`;
 
       setTimeout(() => {
         window.open(generateWhatsAppLink(ADMIN_WHATSAPP, whatsappMessage), "_blank");
@@ -211,7 +214,7 @@ export function DepositPage({ user, onAuthClick }: DepositPageProps) {
       setSelectedBankId("");
       removeReceipt();
     } catch {
-      toast.error("حدث خطأ أثناء تقديم الطلب");
+      toast.error(t("deposit.submitError"));
     }
     setSubmitting(false);
   };
@@ -219,41 +222,41 @@ export function DepositPage({ user, onAuthClick }: DepositPageProps) {
   const copyAccount = (id: string, number: string) => {
     navigator.clipboard.writeText(number);
     setCopiedId(id);
-    toast.success("تم نسخ رقم الحساب!");
+    toast.success(t("deposit.copied"));
     setTimeout(() => setCopiedId(null), 2000);
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "pending": return <Badge className="bg-yellow-50 text-yellow-700 border-yellow-200 text-[10px] font-bold px-2 py-0.5">⏳ قيد المراجعة</Badge>;
-      case "approved": return <Badge className="bg-[#E8F5E9] text-[#1B7A3D] border-[#1B7A3D]/20 text-[10px] font-bold px-2 py-0.5">✅ تم القبول</Badge>;
-      case "rejected": return <Badge className="bg-red-50 text-red-600 border-red-200 text-[10px] font-bold px-2 py-0.5">❌ مرفوض</Badge>;
+      case "pending": return <Badge className="bg-yellow-50 text-yellow-700 border-yellow-200 text-[10px] font-bold px-2 py-0.5">⏳ {t("deposit.pending")}</Badge>;
+      case "approved": return <Badge className="bg-[#E8F5E9] text-[#1B7A3D] border-[#1B7A3D]/20 text-[10px] font-bold px-2 py-0.5">✅ {t("deposit.approved")}</Badge>;
+      case "rejected": return <Badge className="bg-red-50 text-red-600 border-red-200 text-[10px] font-bold px-2 py-0.5">❌ {t("deposit.rejected")}</Badge>;
       default: return null;
     }
   };
 
   if (!user) {
     return (
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="px-4 pt-6">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="px-4 pt-6" dir={isRTL ? "rtl" : "ltr"}>
         <div className="bg-gradient-to-br from-[#E6F9EE] to-[#F0FFF4] rounded-2xl p-8 text-center">
           <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center mx-auto mb-4 card-shadow"><Wallet className="w-8 h-8 text-[#1B7A3D]" /></div>
-          <h2 className="text-xl font-black text-gray-900 mb-2">إيداع رصيد</h2>
-          <p className="text-gray-500 text-sm mb-4">سجل دخولك لتقديم طلب إيداع</p>
-          <Button onClick={onAuthClick} className="bg-gradient-to-l from-[#1B7A3D] to-[#22A24D] text-white font-bold rounded-xl h-11 px-8 btn-green-shadow"><LogIn className="w-4 h-4 ml-2" />تسجيل الدخول</Button>
+          <h2 className="text-xl font-black text-gray-900 mb-2">{t("deposit.title")}</h2>
+          <p className="text-gray-500 text-sm mb-4">{t("deposit.loginToDeposit")}</p>
+          <Button onClick={onAuthClick} className="bg-gradient-to-l from-[#1B7A3D] to-[#22A24D] text-white font-bold rounded-xl h-11 px-8 btn-green-shadow"><LogIn className="w-4 h-4 ml-2" />{t("auth.login")}</Button>
         </div>
       </motion.div>
     );
   }
 
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ type: "spring", stiffness: 120, damping: 14 }} className="px-4 pt-4 pb-4">
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ type: "spring", stiffness: 120, damping: 14 }} className="px-4 pt-4 pb-4" dir={isRTL ? "rtl" : "ltr"}>
 
       {/* Header */}
       <div className="bg-gradient-to-br from-[#E6F9EE] to-[#F0FFF4] rounded-2xl p-4 mb-4 border border-[#1B7A3D]/10">
         <h2 className="text-xl font-black text-gray-900 flex items-center gap-2">
-          <Wallet className="w-6 h-6 text-[#1B7A3D]" />إيداع رصيد
+          <Wallet className="w-6 h-6 text-[#1B7A3D]" />{t("deposit.title")}
         </h2>
-        <p className="text-sm text-gray-500 mt-1">قم بتحويل المبلغ ثم قدّم طلب الإيداع</p>
+        <p className="text-sm text-gray-500 mt-1">{t("deposit.transferThenSubmit")}</p>
       </div>
 
       {/* Deposit Form */}
@@ -262,11 +265,11 @@ export function DepositPage({ user, onAuthClick }: DepositPageProps) {
         {/* Bank Selection */}
         <div className="bg-white rounded-2xl card-shadow overflow-hidden">
           <div className="p-4 border-b border-gray-50">
-            <h3 className="text-[#1B7A3D] font-bold text-sm flex items-center gap-2"><Building2 className="w-4 h-4" />اختر البنك</h3>
+            <h3 className="text-[#1B7A3D] font-bold text-sm flex items-center gap-2"><Building2 className="w-4 h-4" />{t("deposit.selectBank")}</h3>
           </div>
           <div className="p-4 space-y-3">
             {banks.length === 0 ? (
-              <p className="text-gray-400 text-sm text-center py-4">لا توجد حسابات بنكية حالياً</p>
+              <p className="text-gray-400 text-sm text-center py-4">{t("deposit.noBanks")}</p>
             ) : (
               <div className="space-y-2">
                 {banks.map(bank => (
@@ -284,7 +287,7 @@ export function DepositPage({ user, onAuthClick }: DepositPageProps) {
                     {selectedBankId === bank.id && (
                       <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} className="mt-2 pt-2 border-t border-gray-200">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-500">رقم الحساب:</span>
+                          <span className="text-xs text-gray-500">{t("deposit.accountNumber")}:</span>
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-mono font-bold text-gray-900" dir="ltr">{bank.accountNumber}</span>
                             <button type="button" onClick={() => copyAccount(bank.id, bank.accountNumber)} className="text-[#1B7A3D]">
@@ -304,30 +307,30 @@ export function DepositPage({ user, onAuthClick }: DepositPageProps) {
         {/* Amount & Reference */}
         <div className="bg-white rounded-2xl card-shadow overflow-hidden">
           <div className="p-4 border-b border-gray-50">
-            <h3 className="text-[#1B7A3D] font-bold text-sm flex items-center gap-2"><Send className="w-4 h-4" />بيانات الإيداع</h3>
+            <h3 className="text-[#1B7A3D] font-bold text-sm flex items-center gap-2"><Send className="w-4 h-4" />{t("deposit.depositDetails")}</h3>
           </div>
           <div className="p-4 space-y-3">
             <div>
-              <label className="block text-xs text-gray-500 mb-1.5 font-bold">المبلغ (ريال يمني)</label>
+              <label className="block text-xs text-gray-500 mb-1.5 font-bold">{t("deposit.amount")}</label>
               <Input
                 type="number"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 className="bg-gray-50 border-gray-200 text-gray-900 rounded-xl h-11"
-                placeholder={`الحد الأدنى ${MIN_DEPOSIT} ر.ي`}
+                placeholder={`${t("deposit.minAmount")} ${MIN_DEPOSIT} ر.ي`}
                 min={MIN_DEPOSIT}
                 required
               />
               {amount && Number(amount) < MIN_DEPOSIT && (
-                <p className="text-[10px] text-red-500 mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" />الحد الأدنى للإيداع {MIN_DEPOSIT} ر.ي</p>
+                <p className="text-[10px] text-red-500 mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{t("deposit.minAmount")} {MIN_DEPOSIT} ر.ي</p>
               )}
               {maxBalance > 0 && amount && Number(amount) > maxBalance && (
-                <p className="text-[10px] text-red-500 mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" />الحد الأقصى للإيداع {maxBalance.toLocaleString()} ر.ي</p>
+                <p className="text-[10px] text-red-500 mt-1 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{t("deposit.maxAmount")} {maxBalance.toLocaleString()} ر.ي</p>
               )}
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1.5 font-bold">رقم العملية المرجعي</label>
-              <Input value={referenceNumber} onChange={(e) => setReferenceNumber(e.target.value)} className="bg-gray-50 border-gray-200 text-gray-900 rounded-xl h-11" placeholder="رقم عملية التحويل أو الإيصال" dir="ltr" required />
+              <label className="block text-xs text-gray-500 mb-1.5 font-bold">{t("deposit.referenceNumber")}</label>
+              <Input value={referenceNumber} onChange={(e) => setReferenceNumber(e.target.value)} className="bg-gray-50 border-gray-200 text-gray-900 rounded-xl h-11" placeholder={t("deposit.refPlaceholder")} dir="ltr" required />
             </div>
           </div>
         </div>
@@ -335,7 +338,7 @@ export function DepositPage({ user, onAuthClick }: DepositPageProps) {
         {/* Receipt Upload */}
         <div className="bg-white rounded-2xl card-shadow overflow-hidden">
           <div className="p-4 border-b border-gray-50">
-            <h3 className="text-[#1B7A3D] font-bold text-sm flex items-center gap-2"><ImageIcon className="w-4 h-4" />إيصال التحويل</h3>
+            <h3 className="text-[#1B7A3D] font-bold text-sm flex items-center gap-2"><ImageIcon className="w-4 h-4" />{t("deposit.transferReceipt")}</h3>
           </div>
           <div className="p-4">
             {!receiptPreview ? (
@@ -344,14 +347,14 @@ export function DepositPage({ user, onAuthClick }: DepositPageProps) {
                 className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center cursor-pointer hover:border-[#1B7A3D]/50 hover:bg-[#E8F5E9]/30 transition-all"
               >
                 <Upload className="w-8 h-8 mx-auto text-gray-300 mb-2" />
-                <p className="text-sm font-bold text-gray-500">اضغط لرفع صورة الإيصال</p>
-                <p className="text-[10px] text-gray-400 mt-1">سيتم ضغط الصورة تلقائياً (اختياري)</p>
+                <p className="text-sm font-bold text-gray-500">{t("deposit.clickToUpload")}</p>
+                <p className="text-[10px] text-gray-400 mt-1">{t("deposit.autoCompress")}</p>
               </div>
             ) : (
               <div className="relative">
                 <img
                   src={receiptPreview}
-                  alt="إيصال التحويل"
+                  alt={t("deposit.transferReceipt")}
                   className="w-full max-h-48 object-contain rounded-xl bg-gray-50"
                 />
                 <button
@@ -364,7 +367,7 @@ export function DepositPage({ user, onAuthClick }: DepositPageProps) {
                 {isCompressing && (
                   <div className="absolute inset-0 bg-white/80 rounded-xl flex items-center justify-center">
                     <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-6 h-6 border-2 border-[#1B7A3D]/30 border-t-[#1B7A3D] rounded-full" />
-                    <span className="text-xs text-[#1B7A3D] font-bold mr-2">جاري الضغط...</span>
+                    <span className="text-xs text-[#1B7A3D] font-bold mr-2">{t("deposit.compressing")}</span>
                   </div>
                 )}
               </div>
@@ -389,7 +392,7 @@ export function DepositPage({ user, onAuthClick }: DepositPageProps) {
             {submitting ? (
               <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full" />
             ) : (
-              <><Send className="w-4 h-4 ml-2" />تقديم طلب الإيداع</>
+              <><Send className="w-4 h-4 ml-2" />{t("deposit.submit")}</>
             )}
           </Button>
         </motion.div>
@@ -397,7 +400,7 @@ export function DepositPage({ user, onAuthClick }: DepositPageProps) {
         {/* WhatsApp info */}
         <div className="bg-[#E8F5E9] rounded-xl p-3 flex items-center gap-3 border border-[#1B7A3D]/10">
           <Phone className="w-5 h-5 text-[#1B7A3D] flex-shrink-0" />
-          <p className="text-xs text-gray-600 leading-relaxed">بعد التقديم سيتم توجيهك تلقائياً للواتساب لإرسال تفاصيل الإيداع للأدمن</p>
+          <p className="text-xs text-gray-600 leading-relaxed">{t("deposit.whatsappInfo")}</p>
         </div>
       </form>
 
@@ -408,7 +411,7 @@ export function DepositPage({ user, onAuthClick }: DepositPageProps) {
           className="w-full flex items-center justify-between mb-3"
         >
           <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
-            <Receipt className="w-5 h-5 text-[#1B7A3D]" />طلباتي
+            <Receipt className="w-5 h-5 text-[#1B7A3D]" />{t("deposit.myRequests")}
           </h3>
           <div className="flex items-center gap-2">
             {depositRequests.length > 0 && (
@@ -432,7 +435,7 @@ export function DepositPage({ user, onAuthClick }: DepositPageProps) {
               {depositRequests.length === 0 ? (
                 <div className="bg-white rounded-2xl card-shadow p-6 text-center">
                   <Wallet className="w-10 h-10 mx-auto text-gray-200 mb-2" />
-                  <p className="text-gray-400 text-sm">لا توجد طلبات إيداع بعد</p>
+                  <p className="text-gray-400 text-sm">{t("deposit.noRequests")}</p>
                 </div>
               ) : (
                 <div className="space-y-2 max-h-80 overflow-y-auto custom-scrollbar">
@@ -455,9 +458,9 @@ export function DepositPage({ user, onAuthClick }: DepositPageProps) {
                         {getStatusBadge(req.status)}
                       </div>
                       <div className="flex items-center justify-between text-xs text-gray-400 pt-1 border-t border-gray-50">
-                        <span className="flex items-center gap-1"><Receipt className="w-3 h-3" />رقم العملية: {req.referenceNumber}</span>
+                        <span className="flex items-center gap-1"><Receipt className="w-3 h-3" />{t("deposit.refNum")}: {req.referenceNumber}</span>
                         {(req as Record<string, unknown>).receiptImage && (
-                          <span className="flex items-center gap-0.5 text-[#1B7A3D]"><ImageIcon className="w-3 h-3" />إيصال مرفق</span>
+                          <span className="flex items-center gap-0.5 text-[#1B7A3D]"><ImageIcon className="w-3 h-3" />{t("deposit.receiptAttached")}</span>
                         )}
                       </div>
                       {req.rejectionReason && (

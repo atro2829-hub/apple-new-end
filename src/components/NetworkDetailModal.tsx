@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { db } from "@/lib/firebase";
 import { ref, onValue } from "firebase/database";
 import { generateWhatsAppLink } from "@/lib/constants";
+import { useLanguage } from "@/context/LanguageContext";
 import type { NetworkItem, CardSaleLocation, CardItem, TierItem, NetworkTier } from "@/lib/types";
 
 interface NetworkDetailModalProps {
@@ -21,6 +22,7 @@ interface NetworkDetailModalProps {
 }
 
 export function NetworkDetailModal({ network, onClose, allCards = [], allTiers = [] }: NetworkDetailModalProps) {
+  const { t, isRTL } = useLanguage();
   const [saleLocations, setSaleLocations] = useState<CardSaleLocation[]>([]);
   const [networkTiers, setNetworkTiers] = useState<NetworkTier[]>([]);
 
@@ -78,10 +80,10 @@ export function NetworkDetailModal({ network, onClose, allCards = [], allTiers =
   }).filter(t => t.available > 0 || t.sold > 0).sort((a, b) => a.price - b.price);
 
   const networkTypeLabels: Record<string, string> = {
-    wifi: "واي فاي",
-    fiber: "ألياف ضوئية",
-    "4g_lte": "4G LTE",
-    satellite: "قمر صناعي",
+    wifi: t("network.wifi"),
+    fiber: t("network.fiber"),
+    "4g_lte": t("network.lte"),
+    satellite: t("network.satellite"),
   };
 
   return (
@@ -91,7 +93,7 @@ export function NetworkDetailModal({ network, onClose, allCards = [], allTiers =
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[150] flex items-end justify-center bg-black/50 backdrop-blur-sm"
       onClick={onClose}
-      dir="rtl"
+      dir={isRTL ? "rtl" : "ltr"}
     >
       <motion.div
         initial={{ y: "100%" }}
@@ -122,7 +124,7 @@ export function NetworkDetailModal({ network, onClose, allCards = [], allTiers =
                 <div>
                   <h2 className="text-lg font-black text-white">{network.name}</h2>
                   {network.ownerName && (
-                    <p className="text-white/60 text-[10px]">مدير: {network.ownerName}</p>
+                    <p className="text-white/60 text-[10px]">{t("networkDetail.manager")} {network.ownerName}</p>
                   )}
                 </div>
               </div>
@@ -154,15 +156,15 @@ export function NetworkDetailModal({ network, onClose, allCards = [], allTiers =
             <div className="grid grid-cols-3 gap-2">
               <div className="bg-white/15 rounded-xl p-2 text-center">
                 <p className="text-lg font-black text-white">{availableCards.length}</p>
-                <p className="text-[8px] text-white/60">كروت متاحة</p>
+                <p className="text-[8px] text-white/60">{t("networkDetail.availableCards")}</p>
               </div>
               <div className="bg-white/15 rounded-xl p-2 text-center">
                 <p className="text-lg font-black text-white">{soldCards.length}</p>
-                <p className="text-[8px] text-white/60">كروت مباعة</p>
+                <p className="text-[8px] text-white/60">{t("networkDetail.soldCards")}</p>
               </div>
               <div className="bg-white/15 rounded-xl p-2 text-center">
                 <p className="text-sm font-black text-yellow-300">{totalRevenue.toLocaleString()}</p>
-                <p className="text-[8px] text-white/60">إجمالي المبيعات</p>
+                <p className="text-[8px] text-white/60">{t("networkDetail.totalSales")}</p>
               </div>
             </div>
           </div>
@@ -175,14 +177,14 @@ export function NetworkDetailModal({ network, onClose, allCards = [], allTiers =
             <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
               <div className="p-3 border-b border-gray-50 flex items-center gap-2">
                 <Info className="w-4 h-4 text-blue-500" />
-                <h3 className="text-sm font-black text-gray-900">تفاصيل الشبكة</h3>
+                <h3 className="text-sm font-black text-gray-900">{t("networkDetail.details")}</h3>
               </div>
               <div className="p-3 space-y-2">
                 {network.exactLocation && (
                   <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-xl">
                     <MapPin className="w-4 h-4 text-red-500 shrink-0" />
                     <div>
-                      <p className="text-[10px] text-gray-400 font-bold">الموقع التفصيلي</p>
+                      <p className="text-[10px] text-gray-400 font-bold">{t("networkDetail.exactLocation")}</p>
                       <p className="text-xs text-gray-700">{network.exactLocation}</p>
                     </div>
                   </div>
@@ -191,7 +193,7 @@ export function NetworkDetailModal({ network, onClose, allCards = [], allTiers =
                   <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-xl">
                     <Zap className="w-4 h-4 text-orange-500 shrink-0" />
                     <div>
-                      <p className="text-[10px] text-gray-400 font-bold">نطاق التغطية</p>
+                      <p className="text-[10px] text-gray-400 font-bold">{t("networkDetail.coverage")}</p>
                       <p className="text-xs text-gray-700">{network.coverage}</p>
                     </div>
                   </div>
@@ -200,7 +202,7 @@ export function NetworkDetailModal({ network, onClose, allCards = [], allTiers =
                   <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-xl">
                     <Navigation className="w-4 h-4 text-blue-500 shrink-0" />
                     <div>
-                      <p className="text-[10px] text-gray-400 font-bold">السرعة</p>
+                      <p className="text-[10px] text-gray-400 font-bold">{t("networkDetail.speed")}</p>
                       <p className="text-xs text-gray-700">{network.speed}</p>
                     </div>
                   </div>
@@ -209,7 +211,7 @@ export function NetworkDetailModal({ network, onClose, allCards = [], allTiers =
                   <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-xl">
                     <Wifi className="w-4 h-4 text-green-500 shrink-0" />
                     <div>
-                      <p className="text-[10px] text-gray-400 font-bold">عنوان IP</p>
+                      <p className="text-[10px] text-gray-400 font-bold">{t("networkDetail.ipAddress")}</p>
                       <p className="text-xs text-gray-700 font-mono" dir="ltr">{network.connectionIP}</p>
                     </div>
                   </div>
@@ -222,13 +224,13 @@ export function NetworkDetailModal({ network, onClose, allCards = [], allTiers =
                       rel="noopener noreferrer"
                       className="flex-1 flex items-center justify-center gap-1.5 bg-green-500 text-white font-bold rounded-xl h-10 text-xs hover:bg-green-600 transition-colors"
                     >
-                      <MessageCircle className="w-4 h-4" />واتساب
+                      <MessageCircle className="w-4 h-4" />{t("networkDetail.whatsapp")}
                     </a>
                     <a
                       href={`tel:${network.ownerPhone}`}
                       className="flex-1 flex items-center justify-center gap-1.5 bg-blue-500 text-white font-bold rounded-xl h-10 text-xs hover:bg-blue-600 transition-colors"
                     >
-                      <Phone className="w-4 h-4" />اتصال
+                      <Phone className="w-4 h-4" />{t("networkDetail.call")}
                     </a>
                   </div>
                 )}
@@ -242,7 +244,7 @@ export function NetworkDetailModal({ network, onClose, allCards = [], allTiers =
               <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
                 <div className="p-3 border-b border-gray-50 flex items-center gap-2">
                   <Zap className="w-4 h-4 text-[#1B7A3D]" />
-                  <h3 className="text-sm font-black text-gray-900">الفئات المتاحة</h3>
+                  <h3 className="text-sm font-black text-gray-900">{t("networkDetail.availableCategories")}</h3>
                 </div>
                 <div className="p-3 space-y-1.5">
                   {tierStats.map(t => (
@@ -251,12 +253,12 @@ export function NetworkDetailModal({ network, onClose, allCards = [], allTiers =
                         <span className="text-lg">{t.icon || "🟢"}</span>
                         <div>
                           <p className="text-xs font-bold text-gray-900">{t.price?.toLocaleString()} ر.ي</p>
-                          <p className="text-[10px] text-gray-400">{t.data} / {t.duration} أيام</p>
+                          <p className="text-[10px] text-gray-400">{t.data} / {t.duration} {t("networkDetail.days")}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge className="bg-emerald-100 text-emerald-700 text-[8px]">{t.available} متاح</Badge>
-                        <Badge className="bg-gray-100 text-gray-500 text-[8px]">{t.sold} مباع</Badge>
+                        <Badge className="bg-emerald-100 text-emerald-700 text-[8px]">{t.available} {t("networkDetail.available")}</Badge>
+                        <Badge className="bg-gray-100 text-gray-500 text-[8px]">{t.sold} {t("networkDetail.sold")}</Badge>
                       </div>
                     </div>
                   ))}
@@ -271,16 +273,16 @@ export function NetworkDetailModal({ network, onClose, allCards = [], allTiers =
               <div className="p-3 border-b border-gray-50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Store className="w-4 h-4 text-orange-500" />
-                  <h3 className="text-sm font-black text-gray-900">أماكن بيع الكروت</h3>
+                  <h3 className="text-sm font-black text-gray-900">{t("networkDetail.saleLocations")}</h3>
                 </div>
-                <Badge className="bg-orange-100 text-orange-700 text-[9px]">{saleLocations.length} مكان</Badge>
+                <Badge className="bg-orange-100 text-orange-700 text-[9px]">{saleLocations.length} {t("networkDetail.location")}</Badge>
               </div>
               <div className="p-3">
                 {saleLocations.length === 0 ? (
                   <div className="text-center py-6">
                     <Store className="w-10 h-10 mx-auto text-gray-200 mb-2" />
-                    <p className="text-gray-400 text-xs font-bold">لا توجد أماكن بيع مسجلة حالياً</p>
-                    <p className="text-gray-300 text-[10px] mt-1">يمكن لمدير الشبكة إضافة أماكن البيع من لوحة التحكم</p>
+                    <p className="text-gray-400 text-xs font-bold">{t("networkDetail.noLocations")}</p>
+                    <p className="text-gray-300 text-[10px] mt-1">{t("networkDetail.addFromPanel")}</p>
                   </div>
                 ) : (
                   <div className="space-y-2">

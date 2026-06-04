@@ -15,6 +15,7 @@ import { sendPasswordResetEmail } from "firebase/auth";
 import { toast } from "sonner";
 import { compressImageToBase64 } from "@/lib/utils";
 import { iOSSpring, formatDate } from "@/lib/constants";
+import { useLanguage } from "@/context/LanguageContext";
 import type { AppUser } from "@/lib/types";
 import type { User as FirebaseUser } from "firebase/auth";
 
@@ -30,6 +31,7 @@ interface UserSettings {
 }
 
 export function ProfilePage({ user, onBack }: ProfilePageProps) {
+  const { t, isRTL } = useLanguage();
   const [userInfo, setUserInfo] = useState<AppUser | null>(null);
   const [userSettings, setUserSettings] = useState<UserSettings>({
     notificationsEnabled: true,
@@ -80,17 +82,17 @@ export function ProfilePage({ user, onBack }: ProfilePageProps) {
   // Save profile changes
   const handleSaveProfile = async () => {
     if (!user) return;
-    if (!editName.trim()) { toast.error("اسم العرض مطلوب"); return; }
+    if (!editName.trim()) { toast.error(t("profile.nameRequired")); return; }
     setIsSaving(true);
     try {
       await update(ref(db, `users/${user.uid}`), {
         displayName: editName.trim(),
         phone: editPhone.trim(),
       });
-      toast.success("تم تحديث الملف الشخصي");
+      toast.success(t("profile.updated"));
       setIsEditing(false);
     } catch {
-      toast.error("حدث خطأ أثناء الحفظ");
+      toast.error(t("common.error"));
     }
     setIsSaving(false);
   };
@@ -101,7 +103,7 @@ export function ProfilePage({ user, onBack }: ProfilePageProps) {
     if (!file || !user) return;
     // Validate file size (max 2MB before compression)
     if (file.size > 2 * 1024 * 1024) {
-      toast.error("حجم الصورة كبير جداً (الحد 2MB)");
+      toast.error(t("profile.photoTooLarge"));
       return;
     }
     setIsUploadingPhoto(true);
@@ -118,9 +120,9 @@ export function ProfilePage({ user, onBack }: ProfilePageProps) {
         await update(ref(db, `users/${user.uid}`), { photoURL: base64 });
         setPhotoURL(base64);
       }
-      toast.success("تم تحديث الصورة الشخصية");
+      toast.success(t("profile.photoUpdated"));
     } catch {
-      toast.error("فشل رفع الصورة");
+      toast.error(t("profile.photoFailed"));
     }
     setIsUploadingPhoto(false);
     // Reset input
@@ -132,9 +134,9 @@ export function ProfilePage({ user, onBack }: ProfilePageProps) {
     if (!user) return;
     try {
       await update(ref(db, `userSettings/${user.uid}`), { [key]: value });
-      toast.success("تم تحديث الإعداد");
+      toast.success(t("profile.settingUpdated"));
     } catch {
-      toast.error("حدث خطأ");
+      toast.error(t("common.error"));
     }
   };
 
@@ -143,9 +145,9 @@ export function ProfilePage({ user, onBack }: ProfilePageProps) {
     if (!user?.email) return;
     try {
       await sendPasswordResetEmail(auth, user.email);
-      toast.success("تم إرسال رابط إعادة تعيين كلمة المرور لبريدك الإلكتروني");
+      toast.success(t("profile.resetSent"));
     } catch {
-      toast.error("حدث خطأ أثناء إرسال رابط إعادة التعيين");
+      toast.error(t("profile.resetError"));
     }
   };
 
@@ -157,16 +159,16 @@ export function ProfilePage({ user, onBack }: ProfilePageProps) {
       const adminNotifRef = push(ref(db, "notifications/admin"));
       await set(adminNotifRef, {
         type: "general",
-        title: "طلب حذف حساب",
-        message: `المستخدم ${userInfo?.displayName || user.email} طلب حذف حسابه`,
+        title: t("profile.deleteAccount"),
+        message: `${t("profile.user")} ${userInfo?.displayName || user.email} ${isRTL ? "طلب حذف حسابه" : "requested account deletion"}`,
         isRead: false,
         createdAt: Date.now(),
         userId: user.uid,
       });
-      toast.success("تم إرسال طلب حذف الحساب. سيتم مراجعته من قبل الإدارة.");
+      toast.success(t("profile.deleteSent"));
       setShowDeleteConfirm(false);
     } catch {
-      toast.error("حدث خطأ");
+      toast.error(t("common.error"));
     }
   };
 
@@ -178,12 +180,13 @@ export function ProfilePage({ user, onBack }: ProfilePageProps) {
         exit={{ opacity: 0 }}
         transition={iOSSpring.gentle}
         className="px-4 pt-4 text-center"
+        dir={isRTL ? "rtl" : "ltr"}
       >
         <div className="bg-white rounded-2xl card-shadow p-8">
           <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
             <User className="w-8 h-8 text-gray-300" />
           </div>
-          <p className="text-gray-500 text-sm font-bold">سجل الدخول لعرض الملف الشخصي</p>
+          <p className="text-gray-500 text-sm font-bold">{t("profile.loginToView")}</p>
         </div>
       </motion.div>
     );
@@ -196,6 +199,7 @@ export function ProfilePage({ user, onBack }: ProfilePageProps) {
       exit={{ opacity: 0 }}
       transition={iOSSpring.gentle}
       className="px-4 pt-4 pb-6"
+      dir={isRTL ? "rtl" : "ltr"}
     >
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
@@ -204,9 +208,9 @@ export function ProfilePage({ user, onBack }: ProfilePageProps) {
           onClick={onBack}
           className="w-10 h-10 rounded-2xl bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors haptic-press"
         >
-          <ChevronLeft className="w-5 h-5 text-gray-600 rotate-180" />
+          <ChevronLeft className={`w-5 h-5 text-gray-600 ${isRTL ? "rotate-180" : ""}`} />
         </motion.button>
-        <h2 className="text-xl font-black text-gray-900">الملف الشخصي</h2>
+        <h2 className="text-xl font-black text-gray-900">{t("profile.title")}</h2>
       </div>
 
       {/* ─── Profile Card ─── */}
@@ -224,12 +228,12 @@ export function ProfilePage({ user, onBack }: ProfilePageProps) {
             {photoURL ? (
               <img
                 src={photoURL}
-                alt={userInfo.displayName || "مستخدم"}
+                alt={userInfo.displayName || t("profile.user")}
                 className="w-20 h-20 rounded-2xl border-4 border-white shadow-lg object-cover"
               />
             ) : (
               <div className="w-20 h-20 rounded-2xl border-4 border-white shadow-lg bg-gradient-to-br from-[#1B7A3D] to-[#22A24D] flex items-center justify-center">
-                <span className="text-white font-black text-2xl">{(userInfo.displayName || "م")[0].toUpperCase()}</span>
+                <span className="text-white font-black text-2xl">{(userInfo.displayName || t("profile.name"))[0].toUpperCase()}</span>
               </div>
             )}
             {/* Upload button */}
@@ -237,7 +241,7 @@ export function ProfilePage({ user, onBack }: ProfilePageProps) {
               whileTap={{ scale: 0.9 }}
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploadingPhoto}
-              className="absolute -bottom-1 -left-1 w-8 h-8 rounded-full bg-[#1B7A3D] flex items-center justify-center shadow-md hover:bg-[#165E30] transition-colors haptic-press"
+              className={`absolute -bottom-1 ${isRTL ? "-left-1" : "-right-1"} w-8 h-8 rounded-full bg-[#1B7A3D] flex items-center justify-center shadow-md hover:bg-[#165E30] transition-colors haptic-press`}
             >
               {isUploadingPhoto ? (
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -260,20 +264,20 @@ export function ProfilePage({ user, onBack }: ProfilePageProps) {
           {isEditing ? (
             <div className="space-y-3">
               <div>
-                <label className="text-[10px] font-bold text-gray-400 mb-1 block">اسم العرض</label>
+                <label className="text-[10px] font-bold text-gray-400 mb-1 block">{t("profile.displayName")}</label>
                 <Input
                   value={editName}
                   onChange={e => setEditName(e.target.value)}
-                  placeholder="الاسم"
+                  placeholder={t("profile.name")}
                   className="bg-gray-50 border-gray-200 rounded-xl text-sm"
                 />
               </div>
               <div>
-                <label className="text-[10px] font-bold text-gray-400 mb-1 block">رقم الهاتف</label>
+                <label className="text-[10px] font-bold text-gray-400 mb-1 block">{t("profile.phone")}</label>
                 <Input
                   value={editPhone}
                   onChange={e => setEditPhone(e.target.value)}
-                  placeholder="رقم الهاتف"
+                  placeholder={t("profile.phone")}
                   className="bg-gray-50 border-gray-200 rounded-xl text-sm"
                   dir="ltr"
                 />
@@ -287,7 +291,7 @@ export function ProfilePage({ user, onBack }: ProfilePageProps) {
                   {isSaving ? (
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mx-auto" />
                   ) : (
-                    <><Save className="w-4 h-4 ml-1.5" />حفظ</>
+                    <><Save className={`w-4 h-4 ${isRTL ? "ml-1.5" : "mr-1.5"}`} />{t("common.save")}</>
                   )}
                 </Button>
                 <Button
@@ -299,7 +303,7 @@ export function ProfilePage({ user, onBack }: ProfilePageProps) {
                   }}
                   className="rounded-xl"
                 >
-                  إلغاء
+                  {t("common.cancel")}
                 </Button>
               </div>
             </div>
@@ -307,7 +311,7 @@ export function ProfilePage({ user, onBack }: ProfilePageProps) {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <div>
-                  <h3 className="text-lg font-black text-gray-900">{userInfo.displayName || "بدون اسم"}</h3>
+                  <h3 className="text-lg font-black text-gray-900">{userInfo.displayName || t("profile.noName")}</h3>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <Mail className="w-3 h-3 text-gray-400" />
                     <p className="text-xs text-gray-400" dir="ltr">{userInfo.email || user.email}</p>
@@ -333,7 +337,7 @@ export function ProfilePage({ user, onBack }: ProfilePageProps) {
                 <div className="flex items-center gap-1.5 bg-[#E8F5E9] rounded-xl px-3 py-1.5">
                   <Shield className="w-3.5 h-3.5 text-[#1B7A3D]" />
                   <span className="text-xs font-bold text-[#1B7A3D]">
-                    {userInfo.role === "admin" ? "أدمن" : userInfo.role === "network_manager" ? "مشرف شبكة" : "مستخدم"}
+                    {userInfo.role === "admin" ? t("common.admin") : userInfo.role === "network_manager" ? t("common.networkManager") : t("profile.user")}
                   </span>
                 </div>
                 {userInfo.createdAt && (
@@ -352,7 +356,7 @@ export function ProfilePage({ user, onBack }: ProfilePageProps) {
       <div className="bg-white rounded-2xl card-shadow p-4 mb-4">
         <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
           <Settings className="w-4 h-4 text-gray-400" />
-          الإعدادات
+          {t("profile.settings")}
         </h3>
 
         <div className="space-y-3">
@@ -371,12 +375,12 @@ export function ProfilePage({ user, onBack }: ProfilePageProps) {
                 )}
               </div>
               <div>
-                <p className="text-xs font-bold text-gray-900">الإشعارات</p>
-                <p className="text-[10px] text-gray-400">استقبال إشعارات التطبيق</p>
+                <p className="text-xs font-bold text-gray-900">{t("profile.notifications")}</p>
+                <p className="text-[10px] text-gray-400">{t("profile.receiveNotifications")}</p>
               </div>
             </div>
             <div className={`w-11 h-6 rounded-full transition-colors ${userSettings.notificationsEnabled ? "bg-[#1B7A3D]" : "bg-gray-200"} relative`}>
-              <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${userSettings.notificationsEnabled ? "right-0.5" : "right-[22px]"}`} />
+              <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${userSettings.notificationsEnabled ? (isRTL ? "left-0.5" : "right-0.5") : (isRTL ? "left-[22px]" : "right-[22px]")}`} />
             </div>
           </motion.button>
 
@@ -387,8 +391,8 @@ export function ProfilePage({ user, onBack }: ProfilePageProps) {
                 <Globe className="w-4 h-4 text-blue-500" />
               </div>
               <div>
-                <p className="text-xs font-bold text-gray-900">اللغة</p>
-                <p className="text-[10px] text-gray-400">لغة التطبيق</p>
+                <p className="text-xs font-bold text-gray-900">{t("profile.language")}</p>
+                <p className="text-[10px] text-gray-400">{t("profile.appLanguage")}</p>
               </div>
             </div>
             <select
@@ -416,12 +420,12 @@ export function ProfilePage({ user, onBack }: ProfilePageProps) {
                 )}
               </div>
               <div>
-                <p className="text-xs font-bold text-gray-900">التجديد التلقائي</p>
-                <p className="text-[10px] text-gray-400">تجديد الاشتراك تلقائياً</p>
+                <p className="text-xs font-bold text-gray-900">{t("profile.autoRenew")}</p>
+                <p className="text-[10px] text-gray-400">{t("profile.autoRenewDesc")}</p>
               </div>
             </div>
             <div className={`w-11 h-6 rounded-full transition-colors ${userSettings.autoRenewSubscription ? "bg-[#1B7A3D]" : "bg-gray-200"} relative`}>
-              <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${userSettings.autoRenewSubscription ? "right-0.5" : "right-[22px]"}`} />
+              <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${userSettings.autoRenewSubscription ? (isRTL ? "left-0.5" : "right-0.5") : (isRTL ? "left-[22px]" : "right-[22px]")}`} />
             </div>
           </motion.button>
         </div>
@@ -431,7 +435,7 @@ export function ProfilePage({ user, onBack }: ProfilePageProps) {
       <div className="bg-white rounded-2xl card-shadow p-4 mb-4">
         <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
           <KeyRound className="w-4 h-4 text-gray-400" />
-          حسابي
+          {t("profile.myAccount")}
         </h3>
 
         <div className="space-y-2">
@@ -445,10 +449,10 @@ export function ProfilePage({ user, onBack }: ProfilePageProps) {
               <KeyRound className="w-4 h-4 text-blue-500" />
             </div>
             <div className="flex-1">
-              <p className="text-xs font-bold text-gray-900">تغيير كلمة المرور</p>
-              <p className="text-[10px] text-gray-400">إرسال رابط إعادة تعيين</p>
+              <p className="text-xs font-bold text-gray-900">{t("profile.changePassword")}</p>
+              <p className="text-[10px] text-gray-400">{t("profile.resetLink")}</p>
             </div>
-            <ChevronLeft className="w-4 h-4 text-gray-300 -rotate-90" />
+            <ChevronLeft className={`w-4 h-4 text-gray-300 ${isRTL ? "" : "-rotate-90"}`} />
           </motion.button>
 
           {/* Delete account */}
@@ -463,10 +467,10 @@ export function ProfilePage({ user, onBack }: ProfilePageProps) {
                   <Trash2 className="w-4 h-4 text-red-500" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-xs font-bold text-red-600">طلب حذف الحساب</p>
-                  <p className="text-[10px] text-red-400">سيتم مراجعة الطلب من الإدارة</p>
+                  <p className="text-xs font-bold text-red-600">{t("profile.deleteAccount")}</p>
+                  <p className="text-[10px] text-red-400">{t("profile.deleteDesc")}</p>
                 </div>
-                <ChevronLeft className="w-4 h-4 text-red-300 -rotate-90" />
+                <ChevronLeft className={`w-4 h-4 text-red-300 ${isRTL ? "" : "-rotate-90"}`} />
               </motion.button>
             ) : (
               <motion.div
@@ -477,16 +481,16 @@ export function ProfilePage({ user, onBack }: ProfilePageProps) {
               >
                 <div className="flex items-center gap-2 mb-3">
                   <AlertTriangle className="w-5 h-5 text-red-500" />
-                  <p className="text-sm font-bold text-red-700">تأكيد حذف الحساب</p>
+                  <p className="text-sm font-bold text-red-700">{t("profile.confirmDelete")}</p>
                 </div>
-                <p className="text-xs text-red-600 mb-3">هل أنت متأكد من طلب حذف حسابك؟ سيتم مراجعة الطلب من قبل الإدارة.</p>
+                <p className="text-xs text-red-600 mb-3">{t("profile.confirmDeleteMsg")}</p>
                 <div className="flex gap-2">
                   <Button
                     onClick={handleDeleteAccount}
                     size="sm"
                     className="bg-red-500 text-white font-bold rounded-xl h-9"
                   >
-                    <Trash2 className="w-3.5 h-3.5 ml-1" />تأكيد الطلب
+                    <Trash2 className={`w-3.5 h-3.5 ${isRTL ? "ml-1" : "mr-1"}`} />{t("profile.confirmRequest")}
                   </Button>
                   <Button
                     onClick={() => setShowDeleteConfirm(false)}
@@ -494,7 +498,7 @@ export function ProfilePage({ user, onBack }: ProfilePageProps) {
                     size="sm"
                     className="rounded-xl text-xs"
                   >
-                    إلغاء
+                    {t("common.cancel")}
                   </Button>
                 </div>
               </motion.div>

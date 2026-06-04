@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X, Wifi, Users, Wallet, Gift, Receipt, Building2, Megaphone, Smartphone,
@@ -30,6 +30,7 @@ import {
   CommissionSetting, CommissionEntry, MonthlyPayout, CardSaleLocation
 } from "@/lib/types";
 import jsPDF from "jspdf";
+import { useLanguage } from "@/context/LanguageContext";
 import autoTable from "jspdf-autotable";
 
 // ─── Helper: format number with commas ─────────────────────
@@ -45,28 +46,28 @@ function generateCode(): string {
   return code;
 }
 
-// ─── Tab definitions ────────────────────────────────────────
-const ADMIN_TABS = [
-  { id: "overview", icon: BarChart3, label: "الإحصائيات" },
-  { id: "balances", icon: Wallet, label: "أرصدة" },
-  { id: "users", icon: Users, label: "المستخدمين" },
-  { id: "networks", icon: Wifi, label: "الشبكات" },
-  { id: "networkRequests", icon: FileCheck, label: "طلبات الشبكات" },
-  { id: "cards", icon: CreditCard, label: "الكروت" },
-  { id: "orders", icon: Receipt, label: "الطلبات" },
-  { id: "tiers", icon: Star, label: "الفئات" },
-  { id: "starlink", icon: Satellite, label: "Starlink" },
-  { id: "banks", icon: Building2, label: "البنوك" },
-  { id: "sims", icon: SimIcon, label: "شرائح SIM" },
-  { id: "ads", icon: Megaphone, label: "الإعلانات" },
-  { id: "homeBanners", icon: ImageIcon, label: "بانرات الرئيسية" },
-  { id: "gifts", icon: Gift, label: "أكواد الهدايا" },
-  { id: "commissions", icon: Banknote, label: "العمولات" },
-  { id: "subscriptions", icon: Crown, label: "الاشتراكات" },
-  { id: "notifications", icon: Bell, label: "الإشعارات" },
-  { id: "content", icon: FileText, label: "محتوى التطبيق" },
-  { id: "saleLocations", icon: Store, label: "أماكن البيع" },
-  { id: "settings", icon: SettingsIcon, label: "الإعدادات" },
+// ─── Tab definitions (labels set inside component for i18n) ──
+const ADMIN_TAB_IDS = [
+  { id: "overview", icon: BarChart3, labelKey: "admin2.statistics" },
+  { id: "balances", icon: Wallet, labelKey: "admin2.balances" },
+  { id: "users", icon: Users, labelKey: "admin2.users" },
+  { id: "networks", icon: Wifi, labelKey: "admin2.networks" },
+  { id: "networkRequests", icon: FileCheck, labelKey: "admin2.networkRequests" },
+  { id: "cards", icon: CreditCard, labelKey: "admin2.cards" },
+  { id: "orders", icon: Receipt, labelKey: "admin2.orders" },
+  { id: "tiers", icon: Star, labelKey: "admin2.tiers" },
+  { id: "starlink", icon: Satellite, labelKey: "" },
+  { id: "banks", icon: Building2, labelKey: "admin2.banks" },
+  { id: "sims", icon: SimIcon, labelKey: "admin2.sims" },
+  { id: "ads", icon: Megaphone, labelKey: "admin2.ads" },
+  { id: "homeBanners", icon: ImageIcon, labelKey: "admin2.homeBanners" },
+  { id: "gifts", icon: Gift, labelKey: "admin2.gifts" },
+  { id: "commissions", icon: Banknote, labelKey: "admin2.commissions" },
+  { id: "subscriptions", icon: Crown, labelKey: "admin2.subscriptions" },
+  { id: "notifications", icon: Bell, labelKey: "admin2.notifications" },
+  { id: "content", icon: FileText, labelKey: "admin2.content" },
+  { id: "saleLocations", icon: Store, labelKey: "admin2.saleLocations" },
+  { id: "settings", icon: SettingsIcon, labelKey: "admin2.settings" },
 ];
 
 const sectionVariants = {
@@ -79,7 +80,16 @@ const sectionVariants = {
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════
 export function AdminPanel({ onClose }: { onClose: () => void }) {
+  const { t, isRTL } = useLanguage();
   const [activeTab, setActiveTab] = useState("overview");
+
+  const ADMIN_TABS = useMemo(() =>
+    ADMIN_TAB_IDS.map(tab => ({
+      ...tab,
+      label: tab.id === "starlink" ? "Starlink" : t(tab.labelKey),
+    })),
+    [t]
+  );
 
   // ─── Firebase data ─────────────────────────────────────────
   const [allUsers, setAllUsers] = useState<Record<string, AppUser>>({});
@@ -425,46 +435,46 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
         return newBal;
       });
       if (!result.committed || actualAmount <= 0) {
-        toast.error(`رصيد المستخدم وصل للسقف (${maxBalance} ر.ي)`);
+        toast.error(`${t("admin2.balanceCeilingMsg")} (${maxBalance} ${t("admin2.yer")})`);
         return;
       }
       await update(ref(db, `credit/${dep.userId}`), { updatedAt: Date.now() });
       const histRef = push(ref(db, `credit/${dep.userId}/history`));
-      await set(histRef, { type: "deposit", amount: actualAmount, description: `إيداع - ${dep.bankName || "تحويل"}`, date: Date.now() });
+      await set(histRef, { type: "deposit", amount: actualAmount, description: `${t("admin2.depositTransfer")} - ${dep.bankName || "تحويل"}`, date: Date.now() });
       await update(ref(db, `depositRequests/${depId}`), { status: "approved", reviewedAt: Date.now(), reviewedBy: auth.currentUser?.uid });
       const notifRef = push(ref(db, `notifications/${dep.userId}`));
-      await set(notifRef, { type: "deposit_approved", title: "تم قبول الإيداع", message: `تم شحن رصيدك بمبلغ ${actualAmount} ر.ي`, isRead: false, createdAt: Date.now() });
-      toast.success(`تم قبول الإيداع وإضافة ${actualAmount} ر.ي`);
-    } catch { toast.error("حدث خطأ أثناء قبول الإيداع"); }
+      await set(notifRef, { type: "deposit_approved", title: t("admin2.depositApprovedTitle"), message: `${t("admin2.addedToYourAccount")} ${actualAmount} ${t("admin2.yer")} ${t("admin2.toYourAccount")}`, isRead: false, createdAt: Date.now() });
+      toast.success(`${t("admin2.depositApprovedAmount")} ${actualAmount} ${t("admin2.yer")}`);
+    } catch { toast.error(t("admin2.errorDeposit")); }
   };
 
   const rejectDeposit = async (depId: string, dep: DepositRequest, reason?: string) => {
     try {
-      await update(ref(db, `depositRequests/${depId}`), { status: "rejected", rejectionReason: reason || "مرفوض", reviewedAt: Date.now(), reviewedBy: auth.currentUser?.uid });
+      await update(ref(db, `depositRequests/${depId}`), { status: "rejected", rejectionReason: reason || t("admin2.rejectedDefault"), reviewedAt: Date.now(), reviewedBy: auth.currentUser?.uid });
       const notifRef = push(ref(db, `notifications/${dep.userId}`));
-      await set(notifRef, { type: "deposit_rejected", title: "تم رفض الإيداع", message: `تم رفض طلب إيداعك بمبلغ ${dep.amount} ر.ي${reason ? ` - السبب: ${reason}` : ""}`, isRead: false, createdAt: Date.now() });
-      toast.success("تم رفض الإيداع");
-    } catch { toast.error("حدث خطأ"); }
+      await set(notifRef, { type: "deposit_rejected", title: t("admin2.depositRejectedTitle"), message: `${t("admin2.depositRejectedTitle")} ${dep.amount} ${t("admin2.yer")}${reason ? ` - ${reason}` : ""}`, isRead: false, createdAt: Date.now() });
+      toast.success(t("admin2.depositRejectedMsg"));
+    } catch { toast.error(t("admin2.error")); }
   };
 
   const addSingleCard = async () => {
     if (!newCardCode || !newCardPrice || !newCardData || !newCardDuration || !newCardNetwork) {
-      toast.error("يرجى ملء جميع الحقول"); return;
+      toast.error(t("admin2.fillAllFields")); return;
     }
     try {
       const cardRef = push(ref(db, "cards"));
       await set(cardRef, { code: newCardCode, price: Number(newCardPrice), data: newCardData, duration: Number(newCardDuration), isUsed: false, usedBy: null, usedAt: null, tier: newCardTier, network: newCardNetwork, createdAt: Date.now() });
-      toast.success("تم إضافة الكرت");
+      toast.success(t("admin2.addedCardSuccess"));
       setNewCardCode(""); setNewCardPrice(""); setNewCardData(""); setNewCardDuration("");
-    } catch { toast.error("حدث خطأ"); }
+    } catch { toast.error(t("admin2.error")); }
   };
 
   const addBulkCards = async () => {
     const count = Number(bulkCardCount);
-    if (!count || count < 1 || count > 500) { toast.error("عدد الكروت بين 1 و 500"); return; }
-    if (!bulkCardNetwork || !bulkCardTier) { toast.error("اختر الشبكة والفئة"); return; }
-    const tierInfo = tiersList.find(t => t.tier === bulkCardTier);
-    if (!tierInfo) { toast.error("فئة غير صالحة"); return; }
+    if (!count || count < 1 || count > 500) { toast.error(t("admin2.cardCount")); return; }
+    if (!bulkCardNetwork || !bulkCardTier) { toast.error(t("admin2.selectNetworkTier")); return; }
+    const tierInfo = tiersList.find(ti => ti.tier === bulkCardTier);
+    if (!tierInfo) { toast.error(t("admin2.invalidTier")); return; }
 
     setIsAddingBulk(true);
     let added = 0;
@@ -479,30 +489,30 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
         });
         added++;
       }
-      toast.success(`تم إضافة ${added} كرت بنجاح`);
-    } catch { toast.error("حدث خطأ أثناء الإضافة"); }
+      toast.success(`${t("admin2.addedCardsWithCount")} ${added} ${t("admin2.cardsSuccess")}`);
+    } catch { toast.error(t("admin2.errorAdding")); }
     setIsAddingBulk(false);
   };
 
   const addBulkCodesByPasting = async () => {
     const codes = bulkCodesText.split("\n").map(c => c.trim()).filter(c => c.length > 0);
-    if (codes.length === 0) { toast.error("أدخل أكواد الكروت"); return; }
-    if (!bulkCodesNetwork) { toast.error("اختر الشبكة"); return; }
+    if (codes.length === 0) { toast.error(t("admin2.enterCardCodes")); return; }
+    if (!bulkCodesNetwork) { toast.error(t("admin2.selectNetwork")); return; }
 
     let price: number, data: string, duration: number, tier: string;
 
     if (bulkCodesCustom) {
       if (!bulkCodesCustomPrice || !bulkCodesCustomData || !bulkCodesCustomDuration) {
-        toast.error("يرجى ملء حقول الفئة المخصصة"); return;
+        toast.error(t("admin2.fillCustomFields")); return;
       }
       price = Number(bulkCodesCustomPrice);
       data = bulkCodesCustomData;
       duration = Number(bulkCodesCustomDuration);
       tier = `${price}-custom`;
     } else {
-      if (!bulkCodesTier) { toast.error("اختر الفئة"); return; }
-      const tierInfo = tiersList.find(t => t.tier === bulkCodesTier);
-      if (!tierInfo) { toast.error("فئة غير صالحة"); return; }
+      if (!bulkCodesTier) { toast.error(t("admin2.selectTier")); return; }
+      const tierInfo = tiersList.find(ti => ti.tier === bulkCodesTier);
+      if (!tierInfo) { toast.error(t("admin2.invalidTier")); return; }
       price = tierInfo.price;
       data = tierInfo.data;
       duration = tierInfo.duration;
@@ -522,17 +532,17 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
         added++;
         setBulkCodesProgress({ done: added, total: codes.length });
       }
-      toast.success(`تم إضافة ${added} كرت بنجاح`);
+      toast.success(`${t("admin2.addedCardsWithCount")} ${added} ${t("admin2.cardsSuccess")}`);
       setBulkCodesText("");
-    } catch { toast.error("حدث خطأ أثناء الإضافة"); }
+    } catch { toast.error(t("admin2.errorAdding")); }
     setIsAddingBulkCodes(false);
     setBulkCodesProgress({ done: 0, total: 0 });
   };
 
   const deleteCard = async (id: string) => {
     if (deleteConfirm === id) {
-      try { await remove(ref(db, `cards/${id}`)); toast.success("تم حذف الكرت"); setDeleteConfirm(null); }
-      catch { toast.error("حدث خطأ"); }
+      try { await remove(ref(db, `cards/${id}`)); toast.success(t("admin2.deletedCard")); setDeleteConfirm(null); }
+      catch { toast.error(t("admin2.error")); }
     } else {
       setDeleteConfirm(id);
       setTimeout(() => setDeleteConfirm(null), 3000);
@@ -540,13 +550,13 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
   };
 
   const addNetwork = async () => {
-    if (!newNetName.trim()) { toast.error("أدخل اسم الشبكة"); return; }
+    if (!newNetName.trim()) { toast.error(t("admin2.enterNetworkName")); return; }
     if (!/^[a-zA-Z0-9\s\-]+$/.test(newNetName.trim())) {
-      toast.error("اسم الشبكة يجب أن يكون باللغة الإنجليزية فقط (حروف وأرقام)");
+      toast.error(t("admin2.networkNameEnglish"));
       return;
     }
     const id = newNetName.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") + "-net";
-    if (networksList.find(n => n.id === id)) { toast.error("هذه الشبكة موجودة بالفعل"); return; }
+    if (networksList.find(n => n.id === id)) { toast.error(t("admin2.networkExists")); return; }
     try {
       const provinceObj = PROVINCES.find(p => p.id === newNetProvinceId);
       await set(ref(db, `networks/${id}`), {
@@ -557,9 +567,9 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
         district: newNetDistrict || null, exactLocation: newNetLocation || null,
         connectionIP: newNetIP || null, imageBase64: newNetImage || null, createdAt: Date.now(),
       });
-      toast.success(`تم إضافة شبكة ${newNetName}`);
+      toast.success(`${t("admin2.addedNetwork")} ${newNetName}`);
       setNewNetName(""); setNewNetProvinceId(""); setNewNetDistrict(""); setNewNetLocation(""); setNewNetIP(""); setNewNetImage("");
-    } catch { toast.error("حدث خطأ"); }
+    } catch { toast.error(t("admin2.error")); }
   };
 
   const startEditNet = (net: NetworkItem & { id: string }) => {
@@ -574,9 +584,9 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
   };
 
   const saveEditNet = async (netId: string) => {
-    if (!editNetName.trim()) { toast.error("اسم الشبكة مطلوب"); return; }
+    if (!editNetName.trim()) { toast.error(t("admin2.networkNameRequired")); return; }
     if (!/^[a-zA-Z0-9\s\-]+$/.test(editNetName.trim())) {
-      toast.error("اسم الشبكة يجب أن يكون باللغة الإنجليزية فقط (حروف وأرقام)");
+      toast.error(t("admin2.networkNameEnglish"));
       return;
     }
     try {
@@ -591,7 +601,7 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
       if (editNetManager) {
         const mgr = allUsers[editNetManager];
         updates.ownerId = editNetManager;
-        updates.ownerName = mgr?.displayName || mgr?.email || "مستخدم";
+        updates.ownerName = mgr?.displayName || mgr?.email || t("admin2.user2");
         await update(ref(db, `users/${editNetManager}`), { role: "network_manager", managedNetwork: netId });
       } else {
         // Remove current manager if cleared
@@ -603,15 +613,15 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
         updates.ownerName = null;
       }
       await update(ref(db, `networks/${netId}`), updates);
-      toast.success("تم تحديث الشبكة");
+      toast.success(t("admin2.updatedNetwork"));
       setEditingNetId(null);
-    } catch { toast.error("حدث خطأ"); }
+    } catch { toast.error(t("admin2.error")); }
   };
 
   const deleteNetwork = async (id: string) => {
     if (deleteConfirm === `net-${id}`) {
-      try { await remove(ref(db, `networks/${id}`)); toast.success("تم حذف الشبكة"); setDeleteConfirm(null); }
-      catch { toast.error("حدث خطأ"); }
+      try { await remove(ref(db, `networks/${id}`)); toast.success(t("admin2.deletedNetwork")); setDeleteConfirm(null); }
+      catch { toast.error(t("admin2.error")); }
     } else {
       setDeleteConfirm(`net-${id}`);
       setTimeout(() => setDeleteConfirm(null), 3000);
@@ -619,14 +629,14 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
   };
 
   const addTier = async () => {
-    if (!newTierPrice || !newTierData || !newTierDuration) { toast.error("يرجى ملء جميع الحقول"); return; }
+    if (!newTierPrice || !newTierData || !newTierDuration) { toast.error(t("admin2.fillAllFields")); return; }
     const tierKey = newTierPrice.trim();
-    if (tiersList.find(t => t.tier === tierKey)) { toast.error("هذه الفئة موجودة بالفعل"); return; }
+    if (tiersList.find(ti => ti.tier === tierKey)) { toast.error(t("admin2.tierExists")); return; }
     try {
       await set(ref(db, `tiers/${tierKey}`), { tier: tierKey, price: Number(newTierPrice), data: newTierData.trim(), duration: Number(newTierDuration), icon: newTierIcon || "🟢", createdAt: Date.now() });
-      toast.success(`تم إضافة فئة ${newTierPrice} ر.ي`);
+      toast.success(`${t("admin2.addedTier")} ${newTierPrice} ${t("admin2.yer")}`);
       setNewTierPrice(""); setNewTierData(""); setNewTierDuration(""); setNewTierIcon("");
-    } catch { toast.error("حدث خطأ"); }
+    } catch { toast.error(t("admin2.error")); }
   };
 
   const startEditTier = (tier: TierItem & { id: string }) => {
@@ -638,18 +648,18 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
   };
 
   const saveEditTier = async (tierKey: string) => {
-    if (!editTierPrice || !editTierData || !editTierDuration) { toast.error("يرجى ملء جميع الحقول"); return; }
+    if (!editTierPrice || !editTierData || !editTierDuration) { toast.error(t("admin2.fillAllFields")); return; }
     try {
       await update(ref(db, `tiers/${tierKey}`), { price: Number(editTierPrice), data: editTierData.trim(), duration: Number(editTierDuration), icon: editTierIcon || "🟢" });
-      toast.success("تم تحديث الفئة");
+      toast.success(t("admin2.updatedTier"));
       setEditingTier(null);
-    } catch { toast.error("حدث خطأ"); }
+    } catch { toast.error(t("admin2.error")); }
   };
 
   const deleteTier = async (tier: string) => {
     if (deleteConfirm === `tier-${tier}`) {
-      try { await remove(ref(db, `tiers/${tier}`)); toast.success("تم حذف الفئة"); setDeleteConfirm(null); }
-      catch { toast.error("حدث خطأ"); }
+      try { await remove(ref(db, `tiers/${tier}`)); toast.success(t("admin2.deletedTier")); setDeleteConfirm(null); }
+      catch { toast.error(t("admin2.error")); }
     } else {
       setDeleteConfirm(`tier-${tier}`);
       setTimeout(() => setDeleteConfirm(null), 3000);
@@ -668,17 +678,17 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
       // If assigning as manager, update network owner
       if (newRole === "network_manager" && managedNetwork) {
         const u = allUsers[uid];
-        await update(ref(db, `networks/${managedNetwork}`), { ownerId: uid, ownerName: u?.displayName || u?.email || "مستخدم" });
+        await update(ref(db, `networks/${managedNetwork}`), { ownerId: uid, ownerName: u?.displayName || u?.email || t("admin2.user2") });
       }
-      toast.success("تم تغيير الدور");
-    } catch { toast.error("حدث خطأ"); }
+      toast.success(t("admin2.roleChanged2"));
+    } catch { toast.error(t("admin2.error")); }
   };
 
   const toggleUserActive = async (uid: string, isActive: boolean) => {
     try {
       await update(ref(db, `users/${uid}`), { isActive: !isActive });
-      toast.success(isActive ? "تم تعطيل المستخدم" : "تم تفعيل المستخدم");
-    } catch { toast.error("حدث خطأ"); }
+      toast.success(isActive ? t("admin2.userDeactivated2") : t("admin2.userActivated2"));
+    } catch { toast.error(t("admin2.error")); }
   };
 
   // Network submission approve/reject
@@ -687,7 +697,7 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
       // Create new network from submission data
       const netId = sub.networkName.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") + "-net";
       if (networksList.find(n => n.id === netId)) {
-        toast.error("شبكة بنفس الاسم موجودة بالفعل");
+        toast.error(t("admin2.networkNameExists"));
         return;
       }
       const provinceObj = PROVINCES.find(p => p.id === sub.provinceId);
@@ -697,7 +707,7 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
         bgColor: "#1B7A3D1A",
         emoji: "📶",
         ownerId: sub.userId,
-        ownerName: sub.userName || "مستخدم",
+        ownerName: sub.userName || t("admin2.user2"),
         ownerPhone: sub.userPhone || null,
         location: sub.district || provinceObj?.name || null,
         provinceId: sub.provinceId || null,
@@ -730,15 +740,15 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
       const notifRef = push(ref(db, `notifications/${sub.userId}`));
       await set(notifRef, {
         type: "general",
-        title: "تمت الموافقة على شبكتك! 🎉",
-        message: `تم إنشاء شبكة "${sub.networkName}" وتعيينك كمدير لها`,
+        title: t("admin2.networkApprovedTitle"),
+        message: `${t("admin2.networkCreatedAssigned")} "${sub.networkName}" ${t("admin2.andAssignedAsManager")}`,
         isRead: false,
         createdAt: Date.now(),
       });
 
-      toast.success(`تمت الموافقة على شبكة "${sub.networkName}" وإنشائها بنجاح`);
+      toast.success(`${t("admin2.networkApprovedCreated")} "${sub.networkName}" ${t("admin2.andCreatedSuccess")}`);
     } catch {
-      toast.error("حدث خطأ أثناء الموافقة على الطلب");
+      toast.error(t("admin2.errorApprovingSubmission"));
     }
   };
 
@@ -746,7 +756,7 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
     try {
       await update(ref(db, `networkSubmissions/${subId}`), {
         status: "rejected",
-        rejectionReason: reason || "مرفوض",
+        rejectionReason: reason || t("admin2.rejectedDefault"),
         reviewedAt: Date.now(),
         reviewedBy: auth.currentUser?.uid,
       });
@@ -755,23 +765,23 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
       const notifRef = push(ref(db, `notifications/${sub.userId}`));
       await set(notifRef, {
         type: "general",
-        title: "تم رفض طلب الشبكة",
-        message: `تم رفض طلب تسجيل شبكة "${sub.networkName}"${reason ? ` - السبب: ${reason}` : ""}`,
+        title: t("admin2.networkRequestRejected"),
+        message: `${t("admin2.networkRequestRejected")} "${sub.networkName}"${reason ? ` - ${reason}` : ""}`,
         isRead: false,
         createdAt: Date.now(),
       });
 
-      toast.success("تم رفض الطلب");
+      toast.success(t("admin2.submissionRejected2"));
       setRejectingSubmissionId(null);
       setRejectionReason("");
     } catch {
-      toast.error("حدث خطأ أثناء رفض الطلب");
+      toast.error(t("admin2.errorRejectingSubmission"));
     }
   };
 
   // Starlink CRUD
   const addStarlinkProduct = async () => {
-    if (!newStarName || !newStarPrice) { toast.error("يرجى ملء الحقول المطلوبة"); return; }
+    if (!newStarName || !newStarPrice) { toast.error(t("admin2.fillRequired")); return; }
     try {
       const prodRef = push(ref(db, "starlinkProducts"));
       await set(prodRef, {
@@ -780,87 +790,87 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
         specs: { downloadSpeed: newStarDownload || "", uploadSpeed: newStarUpload || "", latency: newStarLatency || "", coverage: newStarCoverage || "" },
         isActive: true, createdAt: Date.now(),
       });
-      toast.success("تم إضافة المنتج");
+      toast.success(t("admin2.addedProduct"));
       setNewStarName(""); setNewStarDesc(""); setNewStarPrice(""); setNewStarQty(""); setNewStarImage(""); setNewStarDownload(""); setNewStarUpload(""); setNewStarLatency(""); setNewStarCoverage("");
-    } catch { toast.error("حدث خطأ"); }
+    } catch { toast.error(t("admin2.error")); }
   };
 
   const deleteStarlinkProduct = async (id: string) => {
     if (deleteConfirm === `star-${id}`) {
-      try { await remove(ref(db, `starlinkProducts/${id}`)); toast.success("تم حذف المنتج"); setDeleteConfirm(null); }
-      catch { toast.error("حدث خطأ"); }
+      try { await remove(ref(db, `starlinkProducts/${id}`)); toast.success(t("admin2.deletedProduct")); setDeleteConfirm(null); }
+      catch { toast.error(t("admin2.error")); }
     } else { setDeleteConfirm(`star-${id}`); setTimeout(() => setDeleteConfirm(null), 3000); }
   };
 
   const updateStarlinkOrderStatus = async (orderId: string, status: string) => {
     try {
       await update(ref(db, `starlinkOrders/${orderId}`), { status });
-      toast.success("تم تحديث حالة الطلب");
-    } catch { toast.error("حدث خطأ"); }
+      toast.success(t("admin2.orderUpdated"));
+    } catch { toast.error(t("admin2.error")); }
   };
 
   // Bank CRUD
   const addBank = async () => {
-    if (!newBankName || !newBankAccount || !newBankNumber) { toast.error("يرجى ملء جميع الحقول"); return; }
+    if (!newBankName || !newBankAccount || !newBankNumber) { toast.error(t("admin2.fillAllFields")); return; }
     try {
       const bankRef = push(ref(db, "bankDetails"));
       await set(bankRef, { bankName: newBankName.trim(), accountName: newBankAccount.trim(), accountNumber: newBankNumber.trim(), isActive: true });
-      toast.success("تم إضافة البنك");
+      toast.success(t("admin2.addedBank"));
       setNewBankName(""); setNewBankAccount(""); setNewBankNumber("");
-    } catch { toast.error("حدث خطأ"); }
+    } catch { toast.error(t("admin2.error")); }
   };
 
   const deleteBank = async (id: string) => {
     if (deleteConfirm === `bank-${id}`) {
-      try { await remove(ref(db, `bankDetails/${id}`)); toast.success("تم حذف البنك"); setDeleteConfirm(null); }
-      catch { toast.error("حدث خطأ"); }
+      try { await remove(ref(db, `bankDetails/${id}`)); toast.success(t("admin2.deletedBank")); setDeleteConfirm(null); }
+      catch { toast.error(t("admin2.error")); }
     } else { setDeleteConfirm(`bank-${id}`); setTimeout(() => setDeleteConfirm(null), 3000); }
   };
 
   // SIM CRUD
   const addSim = async () => {
-    if (!newSimName || !newSimPrice) { toast.error("يرجى ملء الحقول المطلوبة"); return; }
+    if (!newSimName || !newSimPrice) { toast.error(t("admin2.fillRequired")); return; }
     try {
       const simRef = push(ref(db, "simCards"));
       await set(simRef, { name: newSimName.trim(), price: Number(newSimPrice), description: newSimDesc.trim(), imageUrl: newSimImage || "", isAvailable: true });
-      toast.success("تم إضافة شريحة SIM");
+      toast.success(t("admin2.addedSim"));
       setNewSimName(""); setNewSimPrice(""); setNewSimDesc(""); setNewSimImage("");
-    } catch { toast.error("حدث خطأ"); }
+    } catch { toast.error(t("admin2.error")); }
   };
 
   const deleteSim = async (id: string) => {
     if (deleteConfirm === `sim-${id}`) {
-      try { await remove(ref(db, `simCards/${id}`)); toast.success("تم حذف الشريحة"); setDeleteConfirm(null); }
-      catch { toast.error("حدث خطأ"); }
+      try { await remove(ref(db, `simCards/${id}`)); toast.success(t("admin2.deletedSim")); setDeleteConfirm(null); }
+      catch { toast.error(t("admin2.error")); }
     } else { setDeleteConfirm(`sim-${id}`); setTimeout(() => setDeleteConfirm(null), 3000); }
   };
 
   // Ad CRUD
   const addAd = async () => {
-    if (!newAdTitle || !newAdImage) { toast.error("يرجى إدخال العنوان والصورة"); return; }
+    if (!newAdTitle || !newAdImage) { toast.error(t("admin2.enterTitleAndImage")); return; }
     try {
       const adRef = push(ref(db, "advertisements"));
       await set(adRef, { title: newAdTitle.trim(), description: newAdDesc.trim(), imageUrl: newAdImage, isActive: true });
-      toast.success("تم إضافة الإعلان");
+      toast.success(t("admin2.addedAd"));
       setNewAdTitle(""); setNewAdDesc(""); setNewAdImage("");
-    } catch { toast.error("حدث خطأ"); }
+    } catch { toast.error(t("admin2.error")); }
   };
 
   const deleteAd = async (id: string) => {
     if (deleteConfirm === `ad-${id}`) {
-      try { await remove(ref(db, `advertisements/${id}`)); toast.success("تم حذف الإعلان"); setDeleteConfirm(null); }
-      catch { toast.error("حدث خطأ"); }
+      try { await remove(ref(db, `advertisements/${id}`)); toast.success(t("admin2.deletedAd")); setDeleteConfirm(null); }
+      catch { toast.error(t("admin2.error")); }
     } else { setDeleteConfirm(`ad-${id}`); setTimeout(() => setDeleteConfirm(null), 3000); }
   };
 
   const toggleAd = async (id: string, isActive: boolean) => {
-    try { await update(ref(db, `advertisements/${id}`), { isActive: !isActive }); toast.success("تم التحديث"); }
-    catch { toast.error("حدث خطأ"); }
+    try { await update(ref(db, `advertisements/${id}`), { isActive: !isActive }); toast.success(t("admin2.updated")); }
+    catch { toast.error(t("admin2.error")); }
   };
 
   // Home Banner CRUD
   const addHomeBanner = async () => {
-    if (!newBannerTitle || !newBannerImage) { toast.error("يرجى إدخال العنوان والصورة"); return; }
+    if (!newBannerTitle || !newBannerImage) { toast.error(t("admin2.enterTitleAndImage")); return; }
     try {
       const bannerRef = push(ref(db, "homeBanners"));
       await set(bannerRef, {
@@ -872,15 +882,15 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
         order: Number(newBannerOrder) || 0,
         createdAt: Date.now(),
       });
-      toast.success("تم إضافة البانر");
+      toast.success(t("admin2.addedBanner"));
       setNewBannerTitle(""); setNewBannerDesc(""); setNewBannerImage(""); setNewBannerLink(""); setNewBannerOrder("0");
-    } catch { toast.error("حدث خطأ"); }
+    } catch { toast.error(t("admin2.error")); }
   };
 
   const deleteHomeBanner = async (id: string) => {
     if (deleteConfirm === `hb-${id}`) {
-      try { await remove(ref(db, `homeBanners/${id}`)); toast.success("تم حذف البانر"); setDeleteConfirm(null); }
-      catch { toast.error("حدث خطأ"); }
+      try { await remove(ref(db, `homeBanners/${id}`)); toast.success(t("admin2.deletedBanner")); setDeleteConfirm(null); }
+      catch { toast.error(t("admin2.error")); }
     } else {
       setDeleteConfirm(`hb-${id}`);
       setTimeout(() => setDeleteConfirm(null), 3000);
@@ -888,16 +898,16 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
   };
 
   const toggleHomeBanner = async (id: string, isActive: boolean) => {
-    try { await update(ref(db, `homeBanners/${id}`), { isActive: !isActive }); toast.success("تم التحديث"); }
-    catch { toast.error("حدث خطأ"); }
+    try { await update(ref(db, `homeBanners/${id}`), { isActive: !isActive }); toast.success(t("admin2.updated")); }
+    catch { toast.error(t("admin2.error")); }
   };
 
   // Redeem codes
   const generateRedeemCodes = async () => {
     const amount = Number(redeemCodeAmount);
     const count = Number(redeemCodeCount) || 1;
-    if (!amount || amount < 1) { toast.error("أدخل مبلغ صحيح"); return; }
-    if (count < 1 || count > 100) { toast.error("عدد الأكواد بين 1 و 100"); return; }
+    if (!amount || amount < 1) { toast.error(t("admin2.enterValidAmount")); return; }
+    if (count < 1 || count > 100) { toast.error(t("admin2.codesCount1to100")); return; }
     setIsGenerating(true);
     try {
       const generated: { code: string; amount: number }[] = [];
@@ -909,9 +919,9 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
         await set(ref(db, `redeemCodeLookup/${code}`), { pushId: codeRef.key, amount, isUsed: false, createdAt: Date.now() });
       }
       setLastGeneratedCodes(generated);
-      toast.success(`تم توليد ${count} كود`);
+      toast.success(`${t("admin2.generatedCodes")} ${count} ${t("admin2.codes")}`);
       setRedeemCodeAmount(""); setRedeemCodeCount("1");
-    } catch { toast.error("حدث خطأ"); }
+    } catch { toast.error(t("admin2.error")); }
     setIsGenerating(false);
   };
 
@@ -920,8 +930,8 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
       try {
         await remove(ref(db, `redeemCodes/${id}`));
         if (code) await remove(ref(db, `redeemCodeLookup/${code}`));
-        toast.success("تم حذف الكود"); setDeleteConfirm(null);
-      } catch { toast.error("حدث خطأ"); }
+        toast.success(t("admin2.deletedCode")); setDeleteConfirm(null);
+      } catch { toast.error(t("admin2.error")); }
     } else { setDeleteConfirm(`rc-${id}`); setTimeout(() => setDeleteConfirm(null), 3000); }
   };
 
@@ -929,41 +939,41 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
   const addSharedCode = async () => {
     const amount = Number(sharedCodeAmount);
     const maxUses = Number(sharedCodeMaxUses) || 1;
-    if (!amount || amount < 1) { toast.error("أدخل مبلغ صحيح"); return; }
-    if (maxUses < 1) { toast.error("أدخل عدد مرات الاستخدام"); return; }
+    if (!amount || amount < 1) { toast.error(t("admin2.enterValidAmount")); return; }
+    if (maxUses < 1) { toast.error(t("admin2.enterMaxUses")); return; }
     try {
       const code = generateCode();
       const codeRef = push(ref(db, "sharedRedeemCodes"));
       await set(codeRef, { code, amount, maxRedemptions: maxUses, currentRedemptions: 0, description: sharedCodeDesc.trim(), isActive: true, createdAt: Date.now(), createdBy: auth.currentUser?.uid || null, redeemedBy: {} });
-      toast.success(`تم إنشاء كود هدية: ${code}`);
+      toast.success(`${t("admin2.createdGiftCode")}: ${code}`);
       setSharedCodeAmount(""); setSharedCodeMaxUses(""); setSharedCodeDesc("");
-    } catch { toast.error("حدث خطأ"); }
+    } catch { toast.error(t("admin2.error")); }
   };
 
   const toggleSharedCode = async (id: string, isActive: boolean) => {
-    try { await update(ref(db, `sharedRedeemCodes/${id}`), { isActive: !isActive }); toast.success("تم التحديث"); }
-    catch { toast.error("حدث خطأ"); }
+    try { await update(ref(db, `sharedRedeemCodes/${id}`), { isActive: !isActive }); toast.success(t("admin2.updated")); }
+    catch { toast.error(t("admin2.error")); }
   };
 
   // Subscription plans
   const addPlan = async () => {
-    if (!newPlanName || !newPlanPrice || !newPlanDuration) { toast.error("يرجى ملء جميع الحقول"); return; }
+    if (!newPlanName || !newPlanPrice || !newPlanDuration) { toast.error(t("admin2.fillAllFields")); return; }
     try {
       const planRef = push(ref(db, "subscriptionPlans"));
       await set(planRef, { name: newPlanName.trim(), price: Number(newPlanPrice), description: newPlanDesc.trim(), durationDays: Number(newPlanDuration), isActive: true, createdAt: Date.now() });
-      toast.success("تم إضافة الخطة");
+      toast.success(t("admin2.addedPlan"));
       setNewPlanName(""); setNewPlanPrice(""); setNewPlanDesc(""); setNewPlanDuration("");
-    } catch { toast.error("حدث خطأ"); }
+    } catch { toast.error(t("admin2.error")); }
   };
 
   const togglePlan = async (id: string, isActive: boolean) => {
-    try { await update(ref(db, `subscriptionPlans/${id}`), { isActive: !isActive }); toast.success("تم التحديث"); }
-    catch { toast.error("حدث خطأ"); }
+    try { await update(ref(db, `subscriptionPlans/${id}`), { isActive: !isActive }); toast.success(t("admin2.updated")); }
+    catch { toast.error(t("admin2.error")); }
   };
 
   // Bulk notifications
   const sendBulkNotification = async () => {
-    if (!bulkTitle || !bulkMessage) { toast.error("يرجى إدخال العنوان والرسالة"); return; }
+    if (!bulkTitle || !bulkMessage) { toast.error(t("admin2.enterTitleMessage")); return; }
     setIsSendingBulk(true);
     try {
       const targetUsers = usersList.filter(u => u.isActive !== false);
@@ -975,9 +985,9 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
       }
       const bulkRef = push(ref(db, "bulkNotifications"));
       await set(bulkRef, { title: bulkTitle.trim(), message: bulkMessage.trim(), type: "general", targetCount: sentCount, sentAt: Date.now(), sentBy: auth.currentUser?.uid || null });
-      toast.success(`تم إرسال الإشعار إلى ${sentCount} مستخدم`);
+      toast.success(`${t("admin2.sentNotificationToUsers")} ${sentCount} ${t("admin2.user2")}`);
       setBulkTitle(""); setBulkMessage("");
-    } catch { toast.error("حدث خطأ"); }
+    } catch { toast.error(t("admin2.error")); }
     setIsSendingBulk(false);
   };
 
@@ -985,24 +995,24 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
   const markCommissionPaid = async (entryId: string) => {
     try {
       await update(ref(db, `commissionEntries/${entryId}`), { isPaid: true, paidAt: Date.now() });
-      toast.success("تم تحديد كمدفوع");
-    } catch { toast.error("حدث خطأ"); }
+      toast.success(t("admin2.markedAsPaid"));
+    } catch { toast.error(t("admin2.error")); }
   };
 
   // Save app content
   const saveAppContent = async (key: string, value: string) => {
     try {
       await update(ref(db, "appContent"), { [key]: value });
-      toast.success("تم الحفظ");
-    } catch { toast.error("حدث خطأ"); }
+      toast.success(t("admin2.saved"));
+    } catch { toast.error(t("admin2.error")); }
   };
 
   // Save settings
   const saveSettings = async (updates: Record<string, unknown>) => {
     try {
       await update(ref(db, "settings"), updates);
-      toast.success("تم حفظ الإعدادات");
-    } catch { toast.error("حدث خطأ"); }
+      toast.success(t("admin2.settingsSaved"));
+    } catch { toast.error(t("admin2.error")); }
   };
 
   // Image upload handler
@@ -1012,21 +1022,21 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
     try {
       const base64 = await compressImageToBase64(file, maxSize, 0.6);
       setter(base64);
-    } catch { toast.error("فشل رفع الصورة"); }
+    } catch { toast.error(t("admin2.imageUploadFailed")); }
   };
 
   // Copy to clipboard
   const copyCode = async (code: string) => {
-    try { await navigator.clipboard.writeText(code); toast.success("تم النسخ"); }
-    catch { toast.error("فشل النسخ"); }
+    try { await navigator.clipboard.writeText(code); toast.success(t("admin2.copied")); }
+    catch { toast.error(t("admin2.copyFailed")); }
   };
 
   // ─── Balance management actions ─────────────────────────────
   const handleSendBalance = async () => {
     const amount = Number(balanceAmount);
-    if (!balanceUserId) { toast.error("اختر المستخدم"); return; }
-    if (!amount || amount <= 0) { toast.error("أدخل مبلغ صحيح"); return; }
-    if (!balanceDescription.trim()) { toast.error("أدخل وصف العملية"); return; }
+    if (!balanceUserId) { toast.error(t("admin2.selectUser")); return; }
+    if (!amount || amount <= 0) { toast.error(t("admin2.enterValidAmount")); return; }
+    if (!balanceDescription.trim()) { toast.error(t("admin2.enterOperationDesc")); return; }
     setIsProcessingBalance(true);
     try {
       const amountRef = ref(db, `credit/${balanceUserId}/amount`);
@@ -1038,26 +1048,26 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
         }
         return newBal;
       });
-      if (!result.committed) { toast.error("فشلت العملية"); setIsProcessingBalance(false); return; }
+      if (!result.committed) { toast.error(t("admin2.operationFailed")); setIsProcessingBalance(false); return; }
       await update(ref(db, `credit/${balanceUserId}`), { updatedAt: Date.now() });
       const histRef = push(ref(db, `credit/${balanceUserId}/history`));
       await set(histRef, { type: "admin_credit", amount, description: balanceDescription.trim(), date: Date.now() });
       // Send notification
       const notifRef = push(ref(db, `notifications/${balanceUserId}`));
-      await set(notifRef, { type: "general", title: "إضافة رصيد", message: `تم إضافة ${fmt(amount)} ر.ي لحسابك - ${balanceDescription.trim()}`, isRead: false, createdAt: Date.now() });
-      toast.success(`تم إضافة ${fmt(amount)} ر.ي بنجاح`);
+      await set(notifRef, { type: "general", title: t("admin2.balanceAdded"), message: `${t("admin2.addedToYourAccount")} ${fmt(amount)} ${t("admin2.yer")} ${t("admin2.toYourAccount")} - ${balanceDescription.trim()}`, isRead: false, createdAt: Date.now() });
+      toast.success(`${t("admin2.addedToYourAccount")} ${fmt(amount)} ${t("admin2.yer")}`);
       setBalanceAmount(""); setBalanceDescription(""); setBalanceUserId("");
-    } catch { toast.error("حدث خطأ أثناء إضافة الرصيد"); }
+    } catch { toast.error(t("admin2.errorAddingBalance")); }
     setIsProcessingBalance(false);
   };
 
   const handleWithdrawBalance = async () => {
     const amount = Number(balanceAmount);
-    if (!balanceUserId) { toast.error("اختر المستخدم"); return; }
-    if (!amount || amount <= 0) { toast.error("أدخل مبلغ صحيح"); return; }
-    if (!balanceDescription.trim()) { toast.error("أدخل سبب السحب"); return; }
+    if (!balanceUserId) { toast.error(t("admin2.selectUser")); return; }
+    if (!amount || amount <= 0) { toast.error(t("admin2.enterValidAmount")); return; }
+    if (!balanceDescription.trim()) { toast.error(t("admin2.enterWithdrawReason")); return; }
     const currentBalance = userBalances[balanceUserId] || 0;
-    if (amount > currentBalance) { toast.error(`رصيد المستخدم غير كافي (${fmt(currentBalance)} ر.ي فقط)`); return; }
+    if (amount > currentBalance) { toast.error(`${t("admin2.userBalanceInsufficient")} (${fmt(currentBalance)} ${t("admin2.yer")})`); return; }
     setIsProcessingBalance(true);
     try {
       const amountRef = ref(db, `credit/${balanceUserId}/amount`);
@@ -1066,23 +1076,23 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
         if (bal < amount) return bal; // abort if insufficient
         return bal - amount;
       });
-      if (!result.committed) { toast.error("رصيد المستخدم غير كافي"); setIsProcessingBalance(false); return; }
+      if (!result.committed) { toast.error(t("admin2.userBalanceInsufficient")); setIsProcessingBalance(false); return; }
       await update(ref(db, `credit/${balanceUserId}`), { updatedAt: Date.now() });
       const histRef = push(ref(db, `credit/${balanceUserId}/history`));
       await set(histRef, { type: "admin_debit", amount: -amount, description: balanceDescription.trim(), date: Date.now() });
       // Send notification
       const notifRef = push(ref(db, `notifications/${balanceUserId}`));
-      await set(notifRef, { type: "general", title: "سحب رصيد", message: `تم سحب ${fmt(amount)} ر.ي من حسابك - ${balanceDescription.trim()}`, isRead: false, createdAt: Date.now() });
-      toast.success(`تم سحب ${fmt(amount)} ر.ي بنجاح`);
+      await set(notifRef, { type: "general", title: t("admin2.balanceWithdrawn"), message: `${t("admin2.withdrawnFromYourAccount")} ${fmt(amount)} ${t("admin2.yer")} ${t("admin2.fromYourAccount")} - ${balanceDescription.trim()}`, isRead: false, createdAt: Date.now() });
+      toast.success(`${t("admin2.withdrawnFromYourAccount")} ${fmt(amount)} ${t("admin2.yer")}`);
       setBalanceAmount(""); setBalanceDescription(""); setBalanceUserId("");
-    } catch { toast.error("حدث خطأ أثناء سحب الرصيد"); }
+    } catch { toast.error(t("admin2.errorWithdrawingBalance")); }
     setIsProcessingBalance(false);
   };
 
   // ─── Sale Location actions ─────────────────────────────────
   const addSaleLocation = async () => {
     if (!newLocName || !newLocNetworkId || !newLocProvinceId) {
-      toast.error("يرجى ملء اسم المكان والشبكة والمحافظة"); return;
+      toast.error(t("admin2.fillLocationFields")); return;
     }
     try {
       const provinceObj = PROVINCES.find(p => p.id === newLocProvinceId);
@@ -1100,15 +1110,15 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
         isActive: true,
         createdAt: Date.now(),
       });
-      toast.success("تم إضافة مكان البيع");
+      toast.success(t("admin2.addedSaleLocation"));
       setNewLocName(""); setNewLocNetworkId(""); setNewLocProvinceId(""); setNewLocDistrict(""); setNewLocExactLocation(""); setNewLocPhone("");
-    } catch { toast.error("حدث خطأ"); }
+    } catch { toast.error(t("admin2.error")); }
   };
 
   const deleteSaleLocation = async (id: string) => {
     if (deleteConfirm === `sl-${id}`) {
-      try { await remove(ref(db, `cardSaleLocations/${id}`)); toast.success("تم حذف مكان البيع"); setDeleteConfirm(null); }
-      catch { toast.error("حدث خطأ"); }
+      try { await remove(ref(db, `cardSaleLocations/${id}`)); toast.success(t("admin2.deletedSaleLocation")); setDeleteConfirm(null); }
+      catch { toast.error(t("admin2.error")); }
     } else {
       setDeleteConfirm(`sl-${id}`);
       setTimeout(() => setDeleteConfirm(null), 3000);
@@ -1118,8 +1128,8 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
   const toggleSaleLocation = async (id: string, currentActive: boolean) => {
     try {
       await update(ref(db, `cardSaleLocations/${id}`), { isActive: !currentActive });
-      toast.success(!currentActive ? "تم تفعيل مكان البيع" : "تم تعطيل مكان البيع");
-    } catch { toast.error("حدث خطأ"); }
+      toast.success(!currentActive ? t("admin2.activatedSaleLocation") : t("admin2.deactivatedSaleLocation"));
+    } catch { toast.error(t("admin2.error")); }
   };
 
   // ─── RENDER ────────────────────────────────────────────────
@@ -1130,7 +1140,7 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
       exit={{ opacity: 0, y: "100%" }}
       transition={iOSSpring.gentle}
       className="fixed inset-0 z-50 bg-white overflow-hidden flex flex-col"
-      dir="rtl"
+      dir={isRTL ? "rtl" : "ltr"}
     >
       {/* ─── Top Bar ─── */}
       <div className="flex-shrink-0 bg-white border-b border-gray-100 shadow-sm">
@@ -1140,8 +1150,8 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
               <ShieldCheck className="w-4 h-4 text-white" />
             </div>
             <div>
-              <h1 className="text-sm font-black text-gray-900">لوحة التحكم</h1>
-              <p className="text-[9px] text-[#1B7A3D] font-bold">الأدمن</p>
+              <h1 className="text-sm font-black text-gray-900">{t("admin2.controlPanel")}</h1>
+              <p className="text-[9px] text-[#1B7A3D] font-bold">{t("admin2.admin")}</p>
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={onClose} className="text-gray-400 hover:text-gray-600 rounded-xl">
@@ -1768,14 +1778,14 @@ export function AdminPanel({ onClose }: { onClose: () => void }) {
                       <div key={u.id} className="bg-gray-50 rounded-xl p-3">
                         {editingUser === u.id ? (
                           <div className="space-y-2">
-                            <Input value={editDisplayName} onChange={e => setEditDisplayName(e.target.value)} placeholder="الاسم" className="bg-white border-gray-200 rounded-xl text-sm" />
-                            <Input value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder="الهاتف" className="bg-white border-gray-200 rounded-xl text-sm" />
+                            <Input value={editDisplayName} onChange={e => setEditDisplayName(e.target.value)} placeholder={t("admin2.name")} className="bg-white border-gray-200 rounded-xl text-sm" />
+                            <Input value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder={t("admin2.phone2")} className="bg-white border-gray-200 rounded-xl text-sm" />
                             <div className="flex gap-2">
                               <Button size="sm" onClick={async () => {
-                                try { await update(ref(db, `users/${u.id}`), { displayName: editDisplayName.trim(), phone: editPhone.trim() }); toast.success("تم التحديث"); setEditingUser(null); }
-                                catch { toast.error("حدث خطأ"); }
-                              }} className="bg-[#1B7A3D] text-white rounded-xl text-xs"><Save className="w-3 h-3 ml-1" />حفظ</Button>
-                              <Button size="sm" variant="ghost" onClick={() => setEditingUser(null)} className="rounded-xl text-xs">إلغاء</Button>
+                                try { await update(ref(db, `users/${u.id}`), { displayName: editDisplayName.trim(), phone: editPhone.trim() }); toast.success(t("admin2.updated")); setEditingUser(null); }
+                                catch { toast.error(t("admin2.error")); }
+                              }} className="bg-[#1B7A3D] text-white rounded-xl text-xs"><Save className="w-3 h-3 ml-1" />{t("admin2.save2")}</Button>
+                              <Button size="sm" variant="ghost" onClick={() => setEditingUser(null)} className="rounded-xl text-xs">{t("admin2.cancel2")}</Button>
                             </div>
                           </div>
                         ) : (

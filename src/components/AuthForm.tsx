@@ -24,37 +24,44 @@ interface AuthFormProps {
   onBack?: () => void;
 }
 
-// Arabic Firebase error message map
-const FIREBASE_ERRORS_AR: Record<string, string> = {
-  "auth/email-already-in-use": "هذا البريد مسجل مسبقاً. سجل الدخول بدلاً من ذلك",
-  "auth/wrong-password": "كلمة المرور غير صحيحة",
-  "auth/user-not-found": "لا يوجد حساب بهذا البريد",
-  "auth/invalid-email": "البريد الإلكتروني غير صالح",
-  "auth/too-many-requests": "تم حظر الوصول مؤقتاً بسبب محاولات كثيرة. حاول لاحقاً",
-  "auth/weak-password": "كلمة المرور ضعيفة. استخدم 6 أحرف على الأقل",
-  "auth/invalid-credential": "بيانات الدخول غير صحيحة",
+// Firebase error code to i18n translation key mapping
+const FIREBASE_ERROR_KEYS: Record<string, string> = {
+  "auth/email-already-in-use": "auth2.emailAlreadyUsed",
+  "auth/wrong-password": "auth2.wrongPassword",
+  "auth/user-not-found": "auth2.userNotFound",
+  "auth/invalid-email": "auth2.invalidEmail",
+  "auth/too-many-requests": "auth2.tooManyRequests",
+  "auth/weak-password": "auth2.weakPassword",
+  "auth/invalid-credential": "auth2.invalidCredential",
 };
 
-function getArabicError(err: unknown): string {
+function getLocalizedError(err: unknown, t: (path: string) => string): string {
   if (err && typeof err === "object" && "code" in err) {
     const code = (err as { code: string }).code;
-    if (FIREBASE_ERRORS_AR[code]) return FIREBASE_ERRORS_AR[code];
+    if (FIREBASE_ERROR_KEYS[code]) return t(FIREBASE_ERROR_KEYS[code]);
   }
   if (err instanceof Error) {
-    for (const [code, msg] of Object.entries(FIREBASE_ERRORS_AR)) {
-      if (err.message.includes(code)) return msg;
+    for (const [code, key] of Object.entries(FIREBASE_ERROR_KEYS)) {
+      if (err.message.includes(code)) return t(key);
     }
     return err.message;
   }
-  return "حدث خطأ غير متوقع";
+  return t("auth2.unexpectedError");
 }
 
-// Feature cards for the side panel / background
-const FEATURES = [
-  { icon: Wifi, title: "كروت هوت سبوت", desc: "شراء كروت إنترنت فورية من شبكات متعددة" },
-  { icon: Zap, title: "شحن فوري", desc: "شحن رصيدك بسرعة عبر البنوك أو أكواد الشحن" },
-  { icon: Shield, title: "آمن وموثوق", desc: "حماية كاملة لبياناتك ومعاملاتك المالية" },
-  { icon: Globe, title: "تغطية واسعة", desc: "شبكات متاحة في مختلف المحافظات اليمنية" },
+// Feature card definitions (icon only — titles/descs come from i18n)
+const FEATURE_ICONS = [Wifi, Zap, Shield, Globe];
+const FEATURE_TITLE_KEYS = [
+  "auth2.feature1Title",
+  "auth2.feature2Title",
+  "auth2.feature3Title",
+  "auth2.feature4Title",
+];
+const FEATURE_DESC_KEYS = [
+  "auth2.feature1Desc",
+  "auth2.feature2Desc",
+  "auth2.feature3Desc",
+  "auth2.feature4Desc",
 ];
 
 export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProps) {
@@ -75,12 +82,12 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
     e.preventDefault();
 
     if (!isValidEmail(email)) {
-      toast.error("البريد الإلكتروني غير صالح");
+      toast.error(t("auth2.invalidEmail"));
       return;
     }
 
     if (mode === "register" && phone && !isValidYemenPhone(phone)) {
-      toast.error("رقم الهاتف غير صالح. استخدم صيغة يمنية مثل +9677XXXXXXXX");
+      toast.error(t("auth2.invalidPhone"));
       return;
     }
 
@@ -100,26 +107,26 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
         await set(ref(db, `credit/${cred.user.uid}`), {
           amount: 0, updatedAt: Date.now(),
         });
-        toast.success("تم إنشاء الحساب بنجاح!");
+        toast.success(t("auth2.accountCreated"));
       } else {
         await signInWithEmailAndPassword(auth, email, password);
-        toast.success("تم تسجيل الدخول بنجاح!");
+        toast.success(t("auth2.loginSuccess"));
       }
       onSuccess();
     } catch (err: unknown) {
-      toast.error(getArabicError(err));
+      toast.error(getLocalizedError(err, t));
     }
     setSubmitting(false);
   };
 
   const handleResetPassword = async () => {
-    if (!email) { toast.error("أدخل بريدك الإلكتروني أولاً"); return; }
+    if (!email) { toast.error(t("auth2.enterEmailFirst")); return; }
     try {
       await sendPasswordResetEmail(auth, email);
       setResetSent(true);
-      toast.success("تم إرسال رابط إعادة تعيين كلمة المرور لبريدك");
+      toast.success(t("auth2.resetSentDesc"));
     } catch (err: unknown) {
-      toast.error(getArabicError(err));
+      toast.error(getLocalizedError(err, t));
     }
   };
 
@@ -154,23 +161,23 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
             transition={{ delay: 0.15 }}
             className="w-full max-w-sm"
           >
-            <h2 className="text-center text-gray-900 font-black text-2xl mb-2">تم الإرسال بنجاح!</h2>
+            <h2 className="text-center text-gray-900 font-black text-2xl mb-2">{t("auth2.resetSent")}</h2>
             <p className="text-center text-gray-500 text-sm mb-5 leading-relaxed">
-              تم إرسال رابط إعادة تعيين كلمة المرور إلى
+              {t("auth2.resetSentDesc")}
             </p>
             <div className="bg-[#E8F5E9] rounded-xl px-4 py-3 mb-5 flex items-center gap-2 border border-[#1B7A3D]/10">
               <Mail className="w-4 h-4 text-[#1B7A3D] shrink-0" />
               <span className="text-sm font-bold text-gray-900 truncate" dir="ltr">{email}</span>
             </div>
             <p className="text-center text-gray-400 text-xs mb-6">
-              تحقق من صندوق الوارد والبريد غير المرغوب فيه
+              {t("auth2.checkInbox")}
             </p>
             <Button
               onClick={() => { setResetMode(false); setResetSent(false); }}
               className="w-full bg-gradient-to-l from-[#1B7A3D] to-[#22A24D] hover:from-[#165E30] hover:to-[#134D28] text-white font-bold rounded-2xl h-12 btn-green-shadow text-base"
             >
               <ArrowRight className="w-4 h-4 ml-1.5" />
-              العودة لتسجيل الدخول
+              {t("auth2.backToLogin")}
             </Button>
           </motion.div>
         </div>
@@ -190,7 +197,7 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
           >
             <ArrowRight className="w-5 h-5 text-gray-600" />
           </button>
-          <h1 className="text-sm font-black text-gray-900">نسيت كلمة المرور</h1>
+          <h1 className="text-sm font-black text-gray-900">{t("auth2.forgotPasswordTitle")}</h1>
         </div>
 
         {/* Content */}
@@ -208,14 +215,14 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
               </div>
             </div>
 
-            <h2 className="text-center text-gray-900 font-black text-2xl mb-2">نسيت كلمة المرور؟</h2>
+            <h2 className="text-center text-gray-900 font-black text-2xl mb-2">{t("auth2.forgotPassword")}</h2>
             <p className="text-center text-gray-500 text-sm mb-8 leading-relaxed">
-              أدخل بريدك الإلكتروني وسنرسل لك رابط إعادة التعيين
+              {t("auth2.resetDesc")}
             </p>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs text-gray-500 mb-1.5 font-bold">البريد الإلكتروني</label>
+                <label className="block text-xs text-gray-500 mb-1.5 font-bold">{t("auth2.emailAddress")}</label>
                 <div className="relative">
                   <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <Input
@@ -237,9 +244,9 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
                 {submitting ? (
                   <span className="flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    جاري الإرسال...
+                    {t("auth2.sending")}
                   </span>
-                ) : "إرسال رابط التعيين"}
+                ) : t("auth2.sendResetLink")}
               </Button>
             </div>
           </motion.div>
@@ -287,12 +294,12 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
             </div>
 
             <h1 className="text-2xl font-black text-gray-900 mb-1">
-              {mode === "login" ? "مرحباً بعودتك! 👋" : "انضم إلينا 🚀"}
+              {mode === "login" ? t("auth2.welcomeBack") : t("auth2.joinUs")}
             </h1>
             <p className="text-gray-500 text-sm leading-relaxed">
               {mode === "login"
-                ? "سجل الدخول لمتابعة استخدام AppleNet والوصول لكل المزايا"
-                : "أنشئ حسابك وابدأ بشراء كروت الإنترنت بسهولة وأمان"
+                ? t("auth2.loginDesc")
+                : t("auth2.registerDesc")
               }
             </p>
           </motion.div>
@@ -317,14 +324,14 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
                 >
                   {/* Name Field */}
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1.5 font-bold">الاسم الكامل</label>
+                    <label className="block text-xs text-gray-500 mb-1.5 font-bold">{t("auth2.fullName")}</label>
                     <div className="relative">
                       <User className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <Input
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         className="bg-gray-50 border-gray-200 text-gray-900 rounded-xl h-12 text-sm pr-10 focus:border-[#1B7A3D] focus:ring-[#1B7A3D]"
-                        placeholder="أدخل اسمك الكامل"
+                        placeholder={t("auth2.enterName")}
                         required
                       />
                     </div>
@@ -332,7 +339,7 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
 
                   {/* Phone Field */}
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1.5 font-bold">رقم الهاتف <span className="text-gray-300">(اختياري)</span></label>
+                    <label className="block text-xs text-gray-500 mb-1.5 font-bold">{t("auth2.phoneNumber")} <span className="text-gray-300">({t("auth2.optional")})</span></label>
                     <div className="relative">
                       <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <Input
@@ -352,7 +359,7 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
 
             {/* Email Field */}
             <div>
-              <label className="block text-xs text-gray-500 mb-1.5 font-bold">البريد الإلكتروني</label>
+              <label className="block text-xs text-gray-500 mb-1.5 font-bold">{t("auth2.emailAddress")}</label>
               <div className="relative">
                 <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
@@ -369,7 +376,7 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
 
             {/* Password Field */}
             <div>
-              <label className="block text-xs text-gray-500 mb-1.5 font-bold">كلمة المرور</label>
+              <label className="block text-xs text-gray-500 mb-1.5 font-bold">{t("auth2.password")}</label>
               <div className="relative">
                 <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
@@ -397,7 +404,7 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
                 {/* Province Field */}
                 <div>
                   <label className="block text-xs text-gray-500 mb-1.5 font-bold">
-                    المحافظة <span className="text-gray-300">(اختياري)</span>
+                    {t("location.province")} <span className="text-gray-300">({t("auth2.optional")})</span>
                   </label>
                   <div className="relative">
                     <Globe className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -406,7 +413,7 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
                       onChange={(e) => { setProvinceId(e.target.value); setDistrict(""); }}
                       className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl h-12 text-sm pr-10 pl-4 focus:border-[#1B7A3D] focus:ring-[#1B7A3D] appearance-none"
                     >
-                      <option value="">اختر المحافظة</option>
+                      <option value="">{t("location.selectProvince")}</option>
                       {PROVINCES.map(p => (
                         <option key={p.id} value={p.id}>{p.name}</option>
                       ))}
@@ -417,7 +424,7 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
                 {/* District Field */}
                 <div>
                   <label className="block text-xs text-gray-500 mb-1.5 font-bold">
-                    المديرية <span className="text-gray-300">(اختيارية)</span>
+                    {t("location.district")} <span className="text-gray-300">({t("auth2.optional")})</span>
                   </label>
                   <div className="relative">
                     <Building2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -427,7 +434,7 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
                       disabled={!provinceId}
                       className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl h-12 text-sm pr-10 pl-4 focus:border-[#1B7A3D] focus:ring-[#1B7A3D] appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <option value="">{provinceId ? "اختر المديرية" : "اختر المحافظة أولاً"}</option>
+                      <option value="">{provinceId ? t("location.selectDistrict") : t("location.selectProvinceFirst")}</option>
                       {provinceId && getDistricts(provinceId).map(d => (
                         <option key={d} value={d}>{d}</option>
                       ))}
@@ -445,7 +452,7 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
                   onClick={() => setResetMode(true)}
                   className="text-xs text-[#1B7A3D] font-bold hover:underline transition-colors"
                 >
-                  نسيت كلمة المرور؟
+                  {t("auth2.forgotPassword")}
                 </button>
               </div>
             )}
@@ -460,12 +467,12 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
                 {submitting ? (
                   <span className="flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    جاري المعالجة...
+                    {t("auth2.processing")}
                   </span>
                 ) : mode === "login" ? (
-                  "تسجيل الدخول"
+                  t("auth.login")
                 ) : (
-                  "إنشاء حساب"
+                  t("auth.register")
                 )}
               </Button>
             </motion.div>
@@ -477,7 +484,7 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
                 onClick={onSwitchMode}
                 className="text-[#1B7A3D] text-sm font-bold hover:underline transition-colors"
               >
-                {mode === "login" ? "ليس لديك حساب؟ سجل الآن" : "لديك حساب؟ سجل الدخول"}
+                {mode === "login" ? t("auth2.noAccount") : t("auth2.hasAccount")}
               </button>
             </div>
           </motion.form>
@@ -490,7 +497,7 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
             className="mt-10"
           >
             <div className="grid grid-cols-2 gap-3">
-              {FEATURES.map((feature, i) => (
+              {FEATURE_ICONS.map((Icon, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, y: 10 }}
@@ -499,10 +506,10 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
                   className="bg-gray-50 rounded-2xl p-3 text-center"
                 >
                   <div className="w-9 h-9 rounded-xl bg-[#E8F5E9] flex items-center justify-center mx-auto mb-2">
-                    <feature.icon className="w-4 h-4 text-[#1B7A3D]" />
+                    <Icon className="w-4 h-4 text-[#1B7A3D]" />
                   </div>
-                  <p className="text-[11px] font-black text-gray-900">{feature.title}</p>
-                  <p className="text-[9px] text-gray-400 mt-0.5 leading-relaxed">{feature.desc}</p>
+                  <p className="text-[11px] font-black text-gray-900">{t(FEATURE_TITLE_KEYS[i])}</p>
+                  <p className="text-[9px] text-gray-400 mt-0.5 leading-relaxed">{t(FEATURE_DESC_KEYS[i])}</p>
                 </motion.div>
               ))}
             </div>
@@ -516,10 +523,10 @@ export function AuthForm({ mode, onSuccess, onSwitchMode, onBack }: AuthFormProp
             className="mt-8 text-center"
           >
             <p className="text-[10px] text-gray-300 leading-relaxed">
-              بتسجيلك في AppleNet أنت توافق على{" "}
-              <a href="/terms" className="text-[#1B7A3D] hover:underline">شروط الاستخدام</a>
-              {" "}و{" "}
-              <a href="/privacy" className="text-[#1B7A3D] hover:underline">سياسة الخصوصية</a>
+              {t("auth2.agreeTerms")}{" "}
+              <a href="/terms" className="text-[#1B7A3D] hover:underline">{t("auth2.termsOfUse")}</a>
+              {" "}{t("auth2.and")}{" "}
+              <a href="/privacy" className="text-[#1B7A3D] hover:underline">{t("auth2.privacyPolicy")}</a>
             </p>
           </motion.div>
         </div>

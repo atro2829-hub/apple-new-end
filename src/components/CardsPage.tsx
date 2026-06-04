@@ -43,11 +43,11 @@ interface PurchasedCardInfo {
 }
 
 // Card status lifecycle labels
-const CARD_STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  ready:    { label: "متاح",      color: "bg-emerald-100 text-emerald-700" },
-  active:   { label: "مستخدم",    color: "bg-sky-100 text-sky-700" },
-  expired:  { label: "منتهي",     color: "bg-gray-100 text-gray-500" },
-  archived: { label: "مؤرشف",     color: "bg-gray-100 text-gray-400" },
+const CARD_STATUS_CONFIG: Record<string, { labelKey: string; color: string }> = {
+  ready:    { labelKey: "cards2.statusAvailable", color: "bg-emerald-100 text-emerald-700" },
+  active:   { labelKey: "cards2.statusUsed",      color: "bg-sky-100 text-sky-700" },
+  expired:  { labelKey: "cards2.statusExpired",    color: "bg-gray-100 text-gray-500" },
+  archived: { labelKey: "cards2.statusArchived",   color: "bg-gray-100 text-gray-400" },
 };
 
 export function CardsPage({ user, onAuthClick }: CardsPageProps) {
@@ -197,7 +197,7 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
 
     const rateCheck = checkRateLimit(purchaseAttemptsRef.current, 5, 60000);
     if (!rateCheck.allowed) {
-      toast.error("تم حظر المحاولات مؤقتاً. حاول بعد دقيقة");
+      toast.error(t("cards2.rateLimited"));
       return;
     }
 
@@ -205,14 +205,14 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
     if (purchasingTier) return;
 
     setPurchasingTier(tierKey);
-    toast.info("جاري معالجة الشراء...");
+    toast.info(t("cards2.processing"));
 
     try {
       // 1. Get all available cards for this network+tier
       const cardsSnap = await get(ref(db, "cards"));
       const allCards = cardsSnap.val() as Record<string, CardItem> | null;
       if (!allCards) {
-        toast.error("لا توجد كروت متاحة في هذه الفئة");
+        toast.error(t("cards2.noCardsInCategory"));
         setPurchasingTier(null);
         return;
       }
@@ -228,7 +228,7 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
         .map(([id, c]) => ({ id, ...c }));
 
       if (available.length === 0) {
-        toast.error("لا توجد كروت متاحة في هذه الفئة");
+        toast.error(t("cards2.noCardsInCategory"));
         setPurchasingTier(null);
         return;
       }
@@ -249,7 +249,7 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
       });
 
       if (!cardResult.committed) {
-        toast.error("الكرت تم شراؤه من قبل شخص آخر، حاول مرة أخرى");
+        toast.error(t("cards2.cardAlreadyBought"));
         setPurchasingTier(null);
         return;
       }
@@ -265,7 +265,7 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
       if (!creditResult.committed) {
         // Rollback card
         await update(ref(db, `cards/${randomCard.id}`), { isUsed: false, usedBy: null, usedAt: null, status: "ready" });
-        toast.error("رصيدك غير كافي");
+        toast.error(t("cards2.insufficientBalance"));
         setPurchasingTier(null);
         return;
       }
@@ -321,7 +321,7 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
       }
 
       // 6. Record purchase attempt, add to history, create order, notify
-      const networkName = networkInfo?.name || "شبكة";
+      const networkName = networkInfo?.name || "Network";
 
       // Security: log attempt
       const attemptRef = push(ref(db, `security/${user.uid}/purchaseAttempts`));
@@ -332,7 +332,7 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
       await set(histRef, {
         type: "purchase",
         amount: cardPrice,
-        description: `شراء كرت ${randomCard.data} - ${randomCard.duration} أيام - ${networkName}`,
+        description: `شراء كرت ${randomCard.data} - ${randomCard.duration} ${t("cards2.days")} - ${networkName}`,
         date: Date.now(),
       });
 
@@ -355,7 +355,7 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
       await set(notifRef, {
         type: "general",
         title: "تم شراء الكرت بنجاح ✅",
-        message: `تم شراء كرت ${randomCard.data} - ${randomCard.duration} أيام من ${networkName} بقيمة ${cardPrice} ر.ي`,
+        message: `تم شراء كرت ${randomCard.data} - ${randomCard.duration} ${t("cards2.days")} من ${networkName} بقيمة ${cardPrice} ر.ي`,
         isRead: false,
         createdAt: Date.now(),
       });
@@ -372,7 +372,7 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
 
     } catch (error) {
       console.error("Purchase error:", error);
-      toast.error("حدث خطأ أثناء الشراء");
+      toast.error(t("cards2.purchaseError"));
     }
     setPurchasingTier(null);
   };
@@ -380,7 +380,7 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
     setCopiedCode(true);
-    toast.success("تم نسخ رمز الكرت!");
+    toast.success(t("cards2.codeCopied"));
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
@@ -467,10 +467,10 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
         </motion.div>
         {pullY > 30 && !refreshing && (
           <span className="text-[10px] text-gray-400 mr-2">
-            <ArrowDown className="w-3 h-3 inline" /> اسحب للتحديث
+            <ArrowDown className="w-3 h-3 inline" /> {t("cards2.pullToRefresh")}
           </span>
         )}
-        {refreshing && <span className="text-[10px] text-[#1B7A3D] mr-2 font-bold">جاري التحديث...</span>}
+        {refreshing && <span className="text-[10px] text-[#1B7A3D] mr-2 font-bold">{t("cards2.refreshing")}</span>}
       </motion.div>
 
       <div className="px-4 pt-4">
@@ -479,14 +479,14 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
       <div className="bg-gradient-to-br from-[#E6F9EE] to-[#F0FFF4] rounded-2xl p-4 mb-4">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-xl font-black text-gray-900 flex items-center gap-2">
-            <Wifi className="w-6 h-6 text-[#1B7A3D]" />مكينة الكروت
+            <Wifi className="w-6 h-6 text-[#1B7A3D]" />{t("cards2.title")}
           </h2>
-          <Badge className="bg-[#1B7A3D] text-white">{availableCards.length} كرت متاح</Badge>
+          <Badge className="bg-[#1B7A3D] text-white">{availableCards.length} {t("cards2.available")}</Badge>
         </div>
         {user && (
           <div className="flex items-center gap-2 mt-2 bg-white rounded-xl px-3 py-2">
             <Wallet className="w-4 h-4 text-[#1B7A3D]" />
-            <span className="text-sm text-gray-500">رصيدك:</span>
+            <span className="text-sm text-gray-500">{t("cards2.yourBalance")}</span>
             <span className="text-sm font-black text-[#1B7A3D]">{userBalance.toLocaleString()} ر.ي</span>
           </div>
         )}
@@ -500,7 +500,7 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(sanitizeInput(e.target.value))}
-            placeholder="ابحث عن شبكة..."
+            placeholder={t("cards2.searchNetwork")}
             className="w-full bg-white rounded-xl pr-10 pl-4 py-2.5 text-sm text-gray-900 font-bold border border-gray-200 focus:border-[#1B7A3D] focus:ring-1 focus:ring-[#1B7A3D]/30 outline-none transition-all"
           />
           {searchQuery && (
@@ -515,14 +515,14 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
       {networksWithCards.length > 1 && (
         <div className="mb-3">
           <p className="text-xs font-bold text-gray-400 mb-2 flex items-center gap-1">
-            <Wifi className="w-3 h-3" />الشبكة
+            <Wifi className="w-3 h-3" />{t("cards2.network")}
           </p>
           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
             <button
               onClick={() => setSelectedNetworkFilter(null)}
               className={`px-3 py-1.5 rounded-xl text-[10px] font-bold whitespace-nowrap transition-all ${!selectedNetworkFilter ? "bg-[#1B7A3D] text-white btn-green-shadow" : "bg-white text-gray-500 card-shadow"}`}
             >
-              الكل
+              {t("cards2.all")}
             </button>
             {networksWithCards.map(net => {
               const count = availableCards.filter(c => c.network === net.id).length;
@@ -548,14 +548,14 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
       {/* ===== Province Filter ===== */}
       <div className="mb-3">
         <p className="text-xs font-bold text-gray-400 mb-2 flex items-center gap-1">
-          <Globe className="w-3 h-3" />المحافظة
+          <Globe className="w-3 h-3" />{t("cards2.province")}
         </p>
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
           <button
             onClick={() => { setSelectedProvince(null); setSelectedDistrict(null); }}
             className={`px-3 py-1.5 rounded-xl text-[10px] font-bold whitespace-nowrap transition-all ${!selectedProvince ? "bg-[#1B7A3D] text-white btn-green-shadow" : "bg-white text-gray-500 card-shadow"}`}
           >
-            الكل
+            {t("cards2.all")}
           </button>
           {PROVINCES.map(province => {
             const count = fbNetworks.filter(n => n.provinceId === province.id).length;
@@ -594,14 +594,14 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
             className="mb-3 overflow-hidden"
           >
             <p className="text-xs font-bold text-gray-400 mb-2 flex items-center gap-1">
-              <Building2 className="w-3 h-3" />المديرية
+              <Building2 className="w-3 h-3" />{t("cards2.district")}
             </p>
             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
               <button
                 onClick={() => setSelectedDistrict(null)}
                 className={`px-3 py-1.5 rounded-xl text-[10px] font-bold whitespace-nowrap transition-all ${!selectedDistrict ? "bg-[#1B7A3D] text-white btn-green-shadow" : "bg-white text-gray-500 card-shadow"}`}
               >
-                الكل
+                {t("cards2.all")}
               </button>
               {fbDistricts.map(d => {
                 const count = fbNetworks.filter(n => n.provinceId === selectedProvince && n.district === d).length;
@@ -627,7 +627,7 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
       {displayNetworks.length === 0 ? (
         <div className="bg-white rounded-2xl card-shadow p-8 text-center mt-4">
           <Wifi className="w-12 h-12 mx-auto text-gray-200 mb-3" />
-          <p className="text-gray-400 text-sm">لا توجد كروت متاحة حالياً</p>
+          <p className="text-gray-400 text-sm">{t("cards2.noCards")}</p>
         </div>
       ) : userProvinceId && nearbyNetworks.length > 0 ? (
         <div className="space-y-4 pb-4">
@@ -637,8 +637,8 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
               <div className="w-6 h-6 rounded-lg bg-[#E8F5E9] flex items-center justify-center">
                 <MapPin className="w-3 h-3 text-[#1B7A3D]" />
               </div>
-              <h3 className="text-sm font-black text-[#1B7A3D]">القريبة منك</h3>
-              <Badge className="bg-[#E8F5E9] text-[#1B7A3D] text-[9px]">{nearbyNetworks.length} شبكة</Badge>
+              <h3 className="text-sm font-black text-[#1B7A3D]">{t("cards2.nearYou")}</h3>
+              <Badge className="bg-[#E8F5E9] text-[#1B7A3D] text-[9px]">{nearbyNetworks.length} {t("cards2.network")}</Badge>
             </div>
             <div className="space-y-4">
               {nearbyNetworks.map(net => {
@@ -664,17 +664,17 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
                           <div className="flex flex-wrap items-center gap-1.5 mt-1">
                             {net.provinceName && <span className="inline-flex items-center gap-0.5 text-[10px] font-bold bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-md"><Globe className="w-2.5 h-2.5" />{net.provinceName}</span>}
                             {net.district && <span className="inline-flex items-center gap-0.5 text-[10px] font-bold bg-red-100 text-red-700 px-1.5 py-0.5 rounded-md"><MapPin className="w-2.5 h-2.5" />{net.district}</span>}
-                            {net.ownerPhone && <a href={generateWhatsAppLink(net.ownerPhone, `مرحباً، أريد شراء كروت ${net.name}`)} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-0.5 text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-md hover:bg-green-100 transition-colors"><Phone className="w-2.5 h-2.5" />واتساب</a>}
+                            {net.ownerPhone && <a href={generateWhatsAppLink(net.ownerPhone, `مرحباً، أريد شراء كروت ${net.name}`)} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-0.5 text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-md hover:bg-green-100 transition-colors"><Phone className="w-2.5 h-2.5" />{t("cards2.whatsapp")}</a>}
                           </div>
                           <div className="flex items-center gap-2 mt-1.5">
-                            <Badge className="text-[9px] h-5" style={{ backgroundColor: net.color + "20", color: net.color }}>{totalAvailable} كرت متاح</Badge>
+                            <Badge className="text-[9px] h-5" style={{ backgroundColor: net.color + "20", color: net.color }}>{totalAvailable} {t("cards2.available")}</Badge>
                             <button onClick={(e) => { e.stopPropagation(); setDetailNetwork(net); }} className="w-6 h-6 rounded-full bg-white/50 flex items-center justify-center hover:bg-white/80 transition-colors"><Info className="w-3 h-3" style={{ color: net.color }} /></button>
                           </div>
                         </div>
                       </div>
                       <div className="relative mt-3 flex items-center gap-2">
                         <div className="h-px flex-1" style={{ backgroundColor: net.color + "30" }} />
-                        <span className="text-[9px] font-black tracking-wider" style={{ color: net.color + "80" }}>🏧 مكينة كروت</span>
+                        <span className="text-[9px] font-black tracking-wider" style={{ color: net.color + "80" }}>🏧 {t("cards2.cardMachine")}</span>
                         <div className="h-px flex-1" style={{ backgroundColor: net.color + "30" }} />
                       </div>
                     </div>
@@ -691,13 +691,13 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
                               <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br ${visual.gradient} text-white shadow-sm shrink-0`}><span className="text-xs font-black">{t.price}</span></div>
                               <div>
                                 <p className="text-sm font-bold text-gray-900">{t.data}</p>
-                                <div className="flex items-center gap-2 text-[10px] text-gray-400"><span className="flex items-center gap-0.5"><Clock className="w-2.5 h-2.5" />{t.duration} أيام</span><span>{t.icon} فئة {t.price} ر.ي</span></div>
+                                <div className="flex items-center gap-2 text-[10px] text-gray-400"><span className="flex items-center gap-0.5"><Clock className="w-2.5 h-2.5" />{t.duration} {t("cards2.days")}</span><span>{t.icon} {t("cards2.category")} {t.price} ر.ي</span></div>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
-                              <Badge className={`text-[9px] h-5 ${count > 0 ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-400"}`}>{count} متاح</Badge>
+                              <Badge className={`text-[9px] h-5 ${count > 0 ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-400"}`}>{count} {t("cards2.available")}</Badge>
                               <span className={`font-black text-sm ${canAfford ? "text-[#1B7A3D]" : "text-red-400"}`}>{t.price} ر.ي</span>
-                              <Button onClick={() => handleBuyTier(net.id, t.tier)} disabled={count === 0 || isPurchasing || !!purchasingTier || !canAfford} className="bg-gradient-to-l from-[#1B7A3D] to-[#22A24D] text-white font-bold rounded-xl h-9 px-4 text-xs btn-green-shadow disabled:opacity-50 disabled:cursor-not-allowed">{isPurchasing ? "⏳" : !canAfford ? "💸" : "شراء"}</Button>
+                              <Button onClick={() => handleBuyTier(net.id, t.tier)} disabled={count === 0 || isPurchasing || !!purchasingTier || !canAfford} className="bg-gradient-to-l from-[#1B7A3D] to-[#22A24D] text-white font-bold rounded-xl h-9 px-4 text-xs btn-green-shadow disabled:opacity-50 disabled:cursor-not-allowed">{isPurchasing ? "⏳" : !canAfford ? "💸" : t("cards2.buy")}</Button>
                             </div>
                           </div>
                         );
@@ -715,7 +715,7 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
               <div className="flex items-center gap-3 my-2">
                 <div className="h-px flex-1 bg-gray-200" />
                 <span className="text-xs font-bold text-gray-400 flex items-center gap-1">
-                  <Wifi className="w-3 h-3" />جميع الشبكات
+                  <Wifi className="w-3 h-3" />{t("cards2.allNetworks")}
                 </span>
                 <div className="h-px flex-1 bg-gray-200" />
               </div>
@@ -743,17 +743,17 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
                             <div className="flex flex-wrap items-center gap-1.5 mt-1">
                               {net.provinceName && <span className="inline-flex items-center gap-0.5 text-[10px] font-bold bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-md"><Globe className="w-2.5 h-2.5" />{net.provinceName}</span>}
                               {net.district && <span className="inline-flex items-center gap-0.5 text-[10px] font-bold bg-red-100 text-red-700 px-1.5 py-0.5 rounded-md"><MapPin className="w-2.5 h-2.5" />{net.district}</span>}
-                              {net.ownerPhone && <a href={generateWhatsAppLink(net.ownerPhone, `مرحباً، أريد شراء كروت ${net.name}`)} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-0.5 text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-md hover:bg-green-100 transition-colors"><Phone className="w-2.5 h-2.5" />واتساب</a>}
+                              {net.ownerPhone && <a href={generateWhatsAppLink(net.ownerPhone, `مرحباً، أريد شراء كروت ${net.name}`)} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-0.5 text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-md hover:bg-green-100 transition-colors"><Phone className="w-2.5 h-2.5" />{t("cards2.whatsapp")}</a>}
                             </div>
                             <div className="flex items-center gap-2 mt-1.5">
-                              <Badge className="text-[9px] h-5" style={{ backgroundColor: net.color + "20", color: net.color }}>{totalAvailable} كرت متاح</Badge>
+                              <Badge className="text-[9px] h-5" style={{ backgroundColor: net.color + "20", color: net.color }}>{totalAvailable} {t("cards2.available")}</Badge>
                               <button onClick={(e) => { e.stopPropagation(); setDetailNetwork(net); }} className="w-6 h-6 rounded-full bg-white/50 flex items-center justify-center hover:bg-white/80 transition-colors"><Info className="w-3 h-3" style={{ color: net.color }} /></button>
                             </div>
                           </div>
                         </div>
                         <div className="relative mt-3 flex items-center gap-2">
                           <div className="h-px flex-1" style={{ backgroundColor: net.color + "30" }} />
-                          <span className="text-[9px] font-black tracking-wider" style={{ color: net.color + "80" }}>🏧 مكينة كروت</span>
+                          <span className="text-[9px] font-black tracking-wider" style={{ color: net.color + "80" }}>🏧 {t("cards2.cardMachine")}</span>
                           <div className="h-px flex-1" style={{ backgroundColor: net.color + "30" }} />
                         </div>
                       </div>
@@ -770,13 +770,13 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
                                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br ${visual.gradient} text-white shadow-sm shrink-0`}><span className="text-xs font-black">{t.price}</span></div>
                                 <div>
                                   <p className="text-sm font-bold text-gray-900">{t.data}</p>
-                                  <div className="flex items-center gap-2 text-[10px] text-gray-400"><span className="flex items-center gap-0.5"><Clock className="w-2.5 h-2.5" />{t.duration} أيام</span><span>{t.icon} فئة {t.price} ر.ي</span></div>
+                                  <div className="flex items-center gap-2 text-[10px] text-gray-400"><span className="flex items-center gap-0.5"><Clock className="w-2.5 h-2.5" />{t.duration} {t("cards2.days")}</span><span>{t.icon} {t("cards2.category")} {t.price} ر.ي</span></div>
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
-                                <Badge className={`text-[9px] h-5 ${count > 0 ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-400"}`}>{count} متاح</Badge>
+                                <Badge className={`text-[9px] h-5 ${count > 0 ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-400"}`}>{count} {t("cards2.available")}</Badge>
                                 <span className={`font-black text-sm ${canAfford ? "text-[#1B7A3D]" : "text-red-400"}`}>{t.price} ر.ي</span>
-                                <Button onClick={() => handleBuyTier(net.id, t.tier)} disabled={count === 0 || isPurchasing || !!purchasingTier || !canAfford} className="bg-gradient-to-l from-[#1B7A3D] to-[#22A24D] text-white font-bold rounded-xl h-9 px-4 text-xs btn-green-shadow disabled:opacity-50 disabled:cursor-not-allowed">{isPurchasing ? "⏳" : !canAfford ? "💸" : "شراء"}</Button>
+                                <Button onClick={() => handleBuyTier(net.id, t.tier)} disabled={count === 0 || isPurchasing || !!purchasingTier || !canAfford} className="bg-gradient-to-l from-[#1B7A3D] to-[#22A24D] text-white font-bold rounded-xl h-9 px-4 text-xs btn-green-shadow disabled:opacity-50 disabled:cursor-not-allowed">{isPurchasing ? "⏳" : !canAfford ? "💸" : t("cards2.buy")}</Button>
                               </div>
                             </div>
                           );
@@ -858,7 +858,7 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
 
                       <div className="flex items-center gap-2 mt-1.5">
                         <Badge className="text-[9px] h-5" style={{ backgroundColor: net.color + "20", color: net.color }}>
-                          {totalAvailable} كرت متاح
+                          {totalAvailable} {t("cards2.available")}
                         </Badge>
                         <button onClick={(e) => { e.stopPropagation(); setDetailNetwork(net); }} className="w-6 h-6 rounded-full bg-white/50 flex items-center justify-center hover:bg-white/80 transition-colors"><Info className="w-3 h-3" style={{ color: net.color }} /></button>
                         {net.ownerPhone && (
@@ -869,7 +869,7 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
                             onClick={(e) => e.stopPropagation()}
                             className="inline-flex items-center gap-0.5 text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-md hover:bg-green-100 transition-colors"
                           >
-                            <Phone className="w-2.5 h-2.5" />واتساب
+                            <Phone className="w-2.5 h-2.5" />{t("cards2.whatsapp")}
                           </a>
                         )}
                       </div>
@@ -880,7 +880,7 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
                   <div className="relative mt-3 flex items-center gap-2">
                     <div className="h-px flex-1" style={{ backgroundColor: net.color + "30" }} />
                     <span className="text-[9px] font-black tracking-wider" style={{ color: net.color + "80" }}>
-                      🏧 مكينة كروت
+                      🏧 {t("cards2.cardMachine")}
                     </span>
                     <div className="h-px flex-1" style={{ backgroundColor: net.color + "30" }} />
                   </div>
@@ -908,8 +908,8 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
                           <div>
                             <p className="text-sm font-bold text-gray-900">{t.data}</p>
                             <div className="flex items-center gap-2 text-[10px] text-gray-400">
-                              <span className="flex items-center gap-0.5"><Clock className="w-2.5 h-2.5" />{t.duration} أيام</span>
-                              <span>{t.icon} فئة {t.price} ر.ي</span>
+                              <span className="flex items-center gap-0.5"><Clock className="w-2.5 h-2.5" />{t.duration} {t("cards2.days")}</span>
+                              <span>{t.icon} {t("cards2.category")} {t.price} ر.ي</span>
                             </div>
                           </div>
                         </div>
@@ -917,7 +917,7 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
                           <Badge
                             className={`text-[9px] h-5 ${count > 0 ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-400"}`}
                           >
-                            {count} متاح
+                            {count} {t("cards2.available")}
                           </Badge>
                           <span className={`font-black text-sm ${canAfford ? "text-[#1B7A3D]" : "text-red-400"}`}>{t.price} ر.ي</span>
                           <Button
@@ -925,7 +925,7 @@ export function CardsPage({ user, onAuthClick }: CardsPageProps) {
                             disabled={count === 0 || isPurchasing || !!purchasingTier || !canAfford}
                             className="bg-gradient-to-l from-[#1B7A3D] to-[#22A24D] text-white font-bold rounded-xl h-9 px-4 text-xs btn-green-shadow disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            {isPurchasing ? "⏳" : !canAfford ? "💸" : "شراء"}
+                            {isPurchasing ? "⏳" : !canAfford ? "💸" : t("cards2.buy")}
                           </Button>
                         </div>
                       </div>

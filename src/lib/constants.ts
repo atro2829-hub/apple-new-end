@@ -62,65 +62,87 @@ export const generateWhatsAppLink = (phone: string, message: string) => {
   return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 };
 
-// ========== بيانات المحافظات والمديريات ==========
+// ========== Province and District Data ==========
 export interface Province {
   id: string;
   name: string;
+  nameEn?: string;
   isCapital?: boolean;
   districts: string[];
+  districtsEn?: string[];
 }
 
 export const PROVINCES: Province[] = [
   {
     id: "aden",
     name: "العاصمة المؤقتة عدن",
+    nameEn: "Aden (Temporary Capital)",
     isCapital: true,
     districts: ["صيرة (كريتر)", "المعلا", "التواهي", "خور مكسر", "المنصورة", "الشيخ عثمان", "دار سعد", "البريقة"],
+    districtsEn: ["Sira (Crater)", "Al Mualla", "At Tawahi", "Khormaksar", "Al Mansoura", "Ash Shaikh Othman", "Dar Saad", "Al Buraiqa"],
   },
   {
     id: "lahj",
     name: "لحج",
+    nameEn: "Lahj",
     districts: ["الحوطة", "تبن", "المقاطرة", "القبيطة", "طور الباحة", "المضاربة ورأس العارة", "المفلحي", "يهر", "لبعوس", "الحد", "الملاح", "المسيمير", "حبيل جبر", "ردفان (الحبيلين)"],
+    districtsEn: ["Al Hawtah", "Tuban", "Al Muqatirah", "Al Qubaytah", "Tor Al Baha", "Al Mudarabah wa Ras Al Arh", "Al Muflihi", "Yahar", "Labous", "Al Hadd", "Al Milah", "Al Musaymir", "Hubayl Jabr", "Radfan (Al Habilyn)"],
   },
   {
     id: "abyan",
     name: "أبين",
+    nameEn: "Abyan",
     districts: ["زنجبار", "خنفر (جعار)", "لودر", "مودية", "الوضيع", "أحور", "المحفد", "جيشان", "سباح", "رصد", "سرار"],
+    districtsEn: ["Zinjibar", "Khanfar (Jaar)", "Lawdar", "Modiah", "Al Wadea", "Ahwar", "Al Mahfid", "Jayshan", "Subayh", "Rasad", "Sarar"],
   },
   {
     id: "aldhale",
     name: "الضالع",
+    nameEn: "Al Dhale",
     districts: ["الضالع", "قعطبة", "دمت", "الأزارق", "جحاف", "الحشاء", "الشعيب", "الحصين", "جبن"],
+    districtsEn: ["Ad Dhale", "Qataba", "Damt", "Al Azariq", "Jahaf", "Al Hasha", "Ash Shuaib", "Al Husayn", "Juban"],
   },
   {
     id: "shabwah",
     name: "شبوة",
+    nameEn: "Shabwah",
     districts: ["عتق", "بيحان", "عسيلان", "عين", "مرخة العليا", "مرخة السفلى", "نصاب", "حطيب", "الصعيد", "الروضة", "حبان", "ميفعة", "الرضوم", "دعر", "جردان", "الطلح", "عرماء"],
+    districtsEn: ["Ataq", "Bayhan", "Asilan", "Ayn", "Markhah Al Ulya", "Markhah As Sufla", "Nisab", "Hateeb", "As Said", "Ar Rawdah", "Haban", "Mayfaah", "Ar Radum", "Daa", "Jardan", "At Talh", "Arma"],
   },
   {
     id: "hadramout",
     name: "حضرموت",
+    nameEn: "Hadramout",
     districts: ["المكلا", "أرياف المكلا", "الشحر", "غيل باوزير", "غيل بن يمين", "الدين", "حجر", "بروم وميفع", "الريدة وقصيعر", "قصيعر", "سيئون", "تريم", "شبام", "القطن", "وادي العين", "حورة", "حريضة", "عمد", "رخية", "السوم", "ثمود", "رماه", "القف", "زمخ ومنوخ", "ساه", "دوعن", "الضليعة", "يبعث", "حجر الصيعر", "العبر"],
+    districtsEn: ["Al Mukalla", "Mukalla Rural", "Ash Shihr", "Ghayl Bawazir", "Ghayl Bin Yameen", "Ad Deen", "Hajr", "Broom wa Mayfa", "Ar Raydah wa Qusayar", "Qusayar", "Sayun", "Tarim", "Shibam", "Al Qatn", "Wadi Al Ayn", "Hawrah", "Huraidah", "Umd", "Rakhiah", "As Sawm", "Thamud", "Rumah", "Al Quff", "Zamakh wa Manukh", "Sah", "Duan", "Ad Daliah", "Yibath", "Hajr As Siyar", "Al Abr"],
   },
   {
     id: "almahrah",
     name: "المهرة",
+    nameEn: "Al Mahrah",
     districts: ["الغيضة", "شحن", "حات", "حوف", "سيحوت", "المسيلة", "قشن", "حصوين", "منعر"],
+    districtsEn: ["Al Ghaydah", "Shahn", "Hat", "Hawf", "Sayhut", "Al Masilah", "Qishn", "Haswin", "Manar"],
   },
   {
     id: "socotra",
     name: "أرخبيل سقطرى",
+    nameEn: "Socotra Archipelago",
     districts: ["حديبو", "قلنسية وعبد الكوري"],
+    districtsEn: ["Hadibu", "Qalansiyah wa Abd Al Kuri"],
   },
   {
     id: "marib",
     name: "مأرب",
+    nameEn: "Marib",
     districts: ["مدينة مأرب", "مأرب (المديرية)", "الوادي", "صرواح", "مجزر", "مدغل الجدعان", "رغوان", "حريب", "العبدية", "ماهلية", "رحبة", "الجوبة", "جبل مراد", "حريب القراميش"],
+    districtsEn: ["Marib City", "Marib (District)", "Al Wadi", "Sirwah", "Majzar", "Madghal Al Jadaan", "Raghwan", "Harib", "Al Awdiyah", "Mahliyah", "Rahbah", "Al Jubah", "Jabal Murad", "Harib Al Qaramish"],
   },
   {
     id: "taiz",
     name: "تعز",
+    nameEn: "Taiz",
     districts: ["القاهرة", "المظفر", "صالة", "التعزية", "صبر الموادم", "المشرعة والحدنان", "المعافر", "الشمايتين (التربة)", "المواسط", "الصلو", "حيفان", "المسراخ", "جبل حبشي", "مقبنة", "شرعب الرونة", "شرعب السلام", "موزع", "الوازعية", "ذوباب (باب المندب)", "المخا", "الخوخة", "السياني", "سامع"],
+    districtsEn: ["Al Qahirah", "Al Mudhaffar", "Salah", "At Taiziyah", "Sabr Al Mawadim", "Al Mashrah wa Al Hadnan", "Al Maafir", "Ash Shamayatayn (At Turbah)", "Al Maqatirah", "As Salw", "Haifan", "Al Misrakh", "Jabal Habashi", "Maqbanah", "Shara'b Ar Rawnah", "Shara'b As Salam", "Mawza", "Al Wazi'iyah", "Dhubab (Bab Al Mandab)", "Al Mukha", "Al Khawkhah", "As Siyani", "Sami"],
   },
 ];
 
@@ -131,6 +153,12 @@ export const PROVINCE_NAMES = PROVINCES.map(p => p.name);
 export const getDistricts = (provinceId: string): string[] => {
   const province = PROVINCES.find(p => p.id === provinceId);
   return province ? province.districts : [];
+};
+
+// Get English district names for a province
+export const getDistrictsEn = (provinceId: string): string[] => {
+  const province = PROVINCES.find(p => p.id === provinceId);
+  return province?.districtsEn || [];
 };
 
 // @deprecated Use PROVINCES/getDistricts instead

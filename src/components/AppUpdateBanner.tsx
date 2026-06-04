@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, X, Download } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { ref, onValue } from "firebase/database";
+import { useLanguage } from "@/context/LanguageContext";
 
 const APP_VERSION = "2.1.0";
 
@@ -21,6 +22,7 @@ function compareVersions(v1: string, v2: string): number {
 }
 
 export function AppUpdateBanner() {
+  const { t, isRTL } = useLanguage();
   const [showBanner, setShowBanner] = useState(false);
   const [newWorker, setNewWorker] = useState<ServiceWorker | null>(null);
   const [updating, setUpdating] = useState(false);
@@ -98,8 +100,8 @@ export function AppUpdateBanner() {
   };
 
   const message = updateType === "version"
-    ? (updateMsg || "تحديث جديد متاح! قم بتحميل الإصدار الجديد")
-    : "تحديث جديد متاح! اضغط للتحديث";
+    ? (updateMsg || t("update.newUpdate"))
+    : t("update.tapToUpdate");
 
   return (
     <AnimatePresence>
@@ -111,7 +113,7 @@ export function AppUpdateBanner() {
           transition={{ type: "spring", stiffness: 300, damping: 25 }}
           className="fixed top-0 left-0 right-0 z-[150] safe-top"
         >
-          <div className="bg-gradient-to-l from-[#1B7A3D] to-[#22A24D] text-white shadow-lg">
+          <div className="bg-gradient-to-l from-[#1B7A3D] to-[#22A24D] text-white shadow-lg" dir={isRTL ? "rtl" : "ltr"}>
             <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 <motion.div
@@ -125,7 +127,7 @@ export function AppUpdateBanner() {
                   )}
                 </motion.div>
                 <span className="text-sm font-bold truncate">
-                  {updating ? "جاري التحديث..." : message}
+                  {updating ? t("update.updating") : message}
                 </span>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
@@ -135,7 +137,7 @@ export function AppUpdateBanner() {
                       onClick={updateType === "pwa" ? handlePwaUpdate : handleVersionUpdate}
                       className="px-3 py-1 bg-white/20 rounded-lg text-xs font-bold hover:bg-white/30 transition-colors"
                     >
-                      {updateType === "pwa" ? "تحديث" : "تحميل"}
+                      {updateType === "pwa" ? t("update.update") : t("update.download")}
                     </button>
                     <button
                       onClick={handleDismiss}

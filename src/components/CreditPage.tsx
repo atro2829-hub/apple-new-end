@@ -26,13 +26,14 @@ interface CreditPageProps {
 }
 
 // Icon + color mapping for each credit history type
-const HISTORY_TYPE_CONFIG: Record<string, { icon: React.ElementType; bg: string; iconColor: string; label: string; sign: string }> = {
-  deposit:   { icon: PiggyBank,  bg: "bg-[#E8F5E9]", iconColor: "text-[#1B7A3D]", label: "إيداع",     sign: "+" },
-  purchase:  { icon: ShoppingBag, bg: "bg-red-50",     iconColor: "text-red-500",   label: "شراء",     sign: "-" },
-  gift:      { icon: Gift,        bg: "bg-purple-50",  iconColor: "text-purple-500", label: "هدية",     sign: "+" },
-  redeem:    { icon: Ticket,      bg: "bg-sky-50",     iconColor: "text-sky-500",    label: "تحصيل",   sign: "+" },
-  commission:{ icon: DollarSign,  bg: "bg-amber-50",   iconColor: "text-amber-500",  label: "عمولة",   sign: "+" },
-  refund:    { icon: RotateCcw,   bg: "bg-teal-50",    iconColor: "text-teal-500",   label: "استرداد", sign: "+" },
+// Using labelKey instead of label so translation is resolved inside the component
+const HISTORY_TYPE_CONFIG: Record<string, { icon: React.ElementType; bg: string; iconColor: string; labelKey: string; sign: string }> = {
+  deposit:   { icon: PiggyBank,  bg: "bg-[#E8F5E9]", iconColor: "text-[#1B7A3D]", labelKey: "credit.deposit",     sign: "+" },
+  purchase:  { icon: ShoppingBag, bg: "bg-red-50",     iconColor: "text-red-500",   labelKey: "credit.purchase",    sign: "-" },
+  gift:      { icon: Gift,        bg: "bg-purple-50",  iconColor: "text-purple-500", labelKey: "credit.gift",       sign: "+" },
+  redeem:    { icon: Ticket,      bg: "bg-sky-50",     iconColor: "text-sky-500",    labelKey: "credit.redeem",     sign: "+" },
+  commission:{ icon: DollarSign,  bg: "bg-amber-50",   iconColor: "text-amber-500",  labelKey: "credit.commission", sign: "+" },
+  refund:    { icon: RotateCcw,   bg: "bg-teal-50",    iconColor: "text-teal-500",   labelKey: "credit.refund",     sign: "+" },
 };
 
 function getTypeConfig(type: string) {
@@ -126,20 +127,20 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
                   if (renewResult.committed) {
                     await update(ref(db, `credit/${user!.uid}`), { updatedAt: Date.now() });
                     const histRef = push(ref(db, `credit/${user!.uid}/history`));
-                    await set(histRef, { type: "purchase", amount: plan.price, description: `تجديد اشتراك ${plan.name}`, date: Date.now() });
+                    await set(histRef, { type: "purchase", amount: plan.price, description: `${t("credit.renewSubscriptionDesc")} ${plan.name}`, date: Date.now() });
                     await update(ref(db, `userSubscriptions/${user!.uid}`), {
                       activatedAt: Date.now(),
                       expiresAt: Date.now() + plan.durationDays * 86400000,
                       isActive: true,
                     });
-                    toast.success(`تم تجديد اشتراك ${plan.name} تلقائياً`);
+                    toast.success(`${t("credit.renewAutoSuccess")} ${plan.name} ${t("credit.automatically")}`);
                   } else {
                     await update(ref(db, `userSubscriptions/${user!.uid}`), { isActive: false });
-                    toast.info("انتهى اشتراكك ولم يكن رصيدك كافياً للتجديد التلقائي");
+                    toast.info(t("credit.subscriptionExpired"));
                   }
                 } else {
                   await update(ref(db, `userSubscriptions/${user!.uid}`), { isActive: false });
-                  toast.info("انتهى اشتراكك ولم يكن رصيدك كافياً للتجديد التلقائي");
+                  toast.info(t("credit.subscriptionExpired"));
                 }
               } catch {
                 await update(ref(db, `userSubscriptions/${user!.uid}`), { isActive: false });
@@ -155,13 +156,12 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
       });
       unsubs.push(unsub1, unsub2, unsub3, unsub4, unsub5);
     } else {
-      // مسح البيانات عند تسجيل الخروج
       setBalance(0);
       setHistory([]);
       setMySubscription(null);
     }
     return () => unsubs.forEach(u => u());
-  }, [user]);
+  }, [user, t]);
 
   const activePlans = Object.entries(plans).filter(([, p]) => p.isActive).map(([id, p]) => ({ id, ...p }));
 
@@ -169,7 +169,7 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
 
   const handleRedeemCode = async () => {
     if (!user || !redeemCode.trim()) {
-      toast.error("يرجى إدخال الكود أولاً");
+      toast.error(t("credit.enterCodeFirst"));
       return;
     }
     setIsRedeeming(true);
@@ -178,7 +178,7 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
       console.log("[Redeem] Normalized code:", enteredCode, "length:", enteredCode.length);
 
       if (enteredCode.length < 4) {
-        toast.error("الكود قصير جداً، تأكد من إدخال الكود كاملاً");
+        toast.error(t("credit.codeTooShort"));
         setIsRedeeming(false);
         return;
       }
@@ -198,27 +198,27 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
         console.log("[Redeem] Found shared code:", sharedLookupData);
 
         if (sharedLookupData.isActive === false) {
-          toast.error("هذا الكود معطل حالياً");
+          toast.error(t("credit.codeDisabled"));
           setIsRedeeming(false);
           return;
         }
 
         if (sharedLookupData.currentRedemptions >= sharedLookupData.maxRedemptions) {
-          toast.error("هذا الكود وصل للحد الأقصى من الاستخدام");
+          toast.error(t("credit.codeMaxReached"));
           setIsRedeeming(false);
           return;
         }
 
         const redeemedBySnap = await get(ref(db, `sharedRedeemCodes/${sharedLookupData.pushId}/redeemedBy/${user.uid}`));
         if (redeemedBySnap.exists()) {
-          toast.error("لقد استخدمت هذا الكود مسبقاً");
+          toast.error(t("credit.codeAlreadyUsed"));
           setIsRedeeming(false);
           return;
         }
 
         const codeAmount = sharedLookupData.amount;
         if (codeAmount <= 0) {
-          toast.error("قيمة الكود غير صالحة");
+          toast.error(t("credit.codeInvalid"));
           setIsRedeeming(false);
           return;
         }
@@ -238,7 +238,7 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
         });
 
         if (!creditResult.committed || actualAmount <= 0) {
-          toast.error(`لا يمكن شحن الرصيد - سقف الرصيد ${maxBalance.toLocaleString()} ر.ي`);
+          toast.error(`${t("credit.balanceCeiling")} ${maxBalance.toLocaleString()} ${t("credit.riyalShort")}`);
           setIsRedeeming(false);
           return;
         }
@@ -261,7 +261,7 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
               ...redeemedBy,
               [user.uid]: {
                 uid: user.uid,
-                name: user.displayName || user.email || "مستخدم",
+                name: user.displayName || user.email || t("credit.user"),
                 redeemedAt: Date.now(),
               },
             },
@@ -273,7 +273,7 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
             const bal = (cur || 0) as number;
             return Math.max(bal - actualAmount, 0);
           });
-          toast.error("فشل تحصيل الكود الجماعي - ربما وصل للحد الأقصى أو تم استخدامه مسبقاً");
+          toast.error(t("credit.sharedCodeFailed"));
           setIsRedeeming(false);
           return;
         }
@@ -291,20 +291,20 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
         await set(histRef, {
           type: "redeem",
           amount: actualAmount,
-          description: `شحن رصيد بكود جماعي (${enteredCode})`,
+          description: `${t("credit.sharedCodeCharge")} (${enteredCode})`,
           date: Date.now(),
         });
 
         const notifRef = push(ref(db, `notifications/${user.uid}`));
         await set(notifRef, {
           type: "deposit_approved",
-          title: "شحن رصيد بكود جماعي",
-          message: `تم شحن رصيدك بمبلغ ${actualAmount.toLocaleString()} ر.ي عبر كود شحن جماعي`,
+          title: t("credit.sharedCodeCharge"),
+          message: `${t("credit.sharedCodeChargeMsg")} ${actualAmount.toLocaleString()} ${t("credit.riyalShort")} ${t("credit.viaSharedCode")}`,
           isRead: false,
           createdAt: Date.now(),
         });
 
-        toast.success(`تم شحن رصيدك بمبلغ ${actualAmount.toLocaleString()} ر.ي بنجاح`);
+        toast.success(`${t("credit.chargedAmountSuccess")} ${actualAmount.toLocaleString()} ${t("credit.chargedSuccessFull")}`);
         setRedeemSuccess({ amount: actualAmount, visible: true });
         setRedeemCode("");
         setShowRedeem(false);
@@ -323,7 +323,7 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
 
       if (lookupData) {
         if (lookupData.isUsed === true) {
-          toast.error("هذا الكود تم استخدامه مسبقاً");
+          toast.error(t("credit.codeUsedAlready"));
           setIsRedeeming(false);
           return;
         }
@@ -339,7 +339,7 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
             const normalizedStoredCode = normalizeCode(val.code || "");
             if (normalizedStoredCode === enteredCode) {
               if (val.isUsed === true) {
-                toast.error("هذا الكود تم استخدامه مسبقاً");
+                toast.error(t("credit.codeUsedAlready"));
                 setIsRedeeming(false);
                 return;
               }
@@ -350,14 +350,14 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
           }
         }
         if (!foundCodeId) {
-          toast.error("الكود غير صحيح أو غير موجود");
+          toast.error(t("credit.codeNotFound"));
           setIsRedeeming(false);
           return;
         }
       }
 
       if (codeAmount <= 0) {
-        toast.error("قيمة الكود غير صالحة");
+        toast.error(t("credit.codeInvalid"));
         setIsRedeeming(false);
         return;
       }
@@ -373,7 +373,7 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
       });
 
       if (!chargeResult.committed) {
-        toast.error(`لا يمكن شحن الرصيد - سقف الرصيد ${maxBalance.toLocaleString()} ر.ي يمنع الإضافة`);
+        toast.error(`${t("credit.balanceCeiling")} ${maxBalance.toLocaleString()} ${t("credit.riyalShort")} ${t("credit.balanceCeilingPreventsAdd")}`);
         setIsRedeeming(false);
         return;
       }
@@ -395,7 +395,7 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
       await update(ref(db, `redeemCodes/${foundCodeId}`), {
         isUsed: true,
         usedBy: user.uid,
-        usedByName: user.displayName || user.email || "مستخدم",
+        usedByName: user.displayName || user.email || t("credit.user"),
         usedAt: Date.now(),
       });
 
@@ -404,7 +404,7 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
       await set(histRef, {
         type: "redeem",
         amount: codeAmount,
-        description: `شحن رصيد بكود (${enteredCode})`,
+        description: `${t("credit.codeCharge")} (${enteredCode})`,
         date: Date.now(),
       });
 
@@ -412,21 +412,21 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
       const notifRef = push(ref(db, `notifications/${user.uid}`));
       await set(notifRef, {
         type: "deposit_approved",
-        title: "شحن رصيد بكود",
-        message: `تم شحن رصيدك بمبلغ ${codeAmount.toLocaleString()} ر.ي عبر كود الشحن`,
+        title: t("credit.codeCharge"),
+        message: `${t("credit.codeChargeMsg")} ${codeAmount.toLocaleString()} ${t("credit.riyalShort")} ${t("credit.viaChargeCode")}`,
         isRead: false,
         createdAt: Date.now(),
       });
 
-      toast.success(`تم شحن رصيدك بمبلغ ${codeAmount.toLocaleString()} ر.ي بنجاح`);
+      toast.success(`${t("credit.chargedAmountSuccess")} ${codeAmount.toLocaleString()} ${t("credit.chargedSuccessFull")}`);
       setRedeemSuccess({ amount: codeAmount, visible: true });
       setRedeemCode("");
       setShowRedeem(false);
       setTimeout(() => setRedeemSuccess(null), 3000);
     } catch (error: unknown) {
       console.error("[Redeem] Error:", error);
-      const msg = error instanceof Error ? error.message : "حدث خطأ أثناء تحصيل الكود";
-      toast.error(msg.includes("permission") ? "ليس لديك صلاحية - سجل الدخول أولاً" : "حدث خطأ أثناء تحصيل الكود، حاول مرة أخرى");
+      const msg = error instanceof Error ? error.message : t("credit.redeemError");
+      toast.error(msg.includes("permission") ? t("credit.noPermission") : t("credit.redeemErrorRetry"));
     }
     setIsRedeeming(false);
   };
@@ -444,7 +444,7 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
       });
 
       if (!result.committed) {
-        toast.error(`رصيدك غير كافي. تحتاج ${plan.price.toLocaleString()} ر.ي`);
+        toast.error(`${t("credit.insufficientBalanceNeed")} ${plan.price.toLocaleString()} ${t("credit.riyalShort")}`);
         setIsSubscribing(false);
         return;
       }
@@ -453,7 +453,7 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
       await update(ref(db, `credit/${user.uid}`), { updatedAt: Date.now() });
 
       const histRef = push(ref(db, `credit/${user.uid}/history`));
-      await set(histRef, { type: "purchase", amount: plan.price, description: `اشتراك باقة ${plan.name}`, date: Date.now() });
+      await set(histRef, { type: "purchase", amount: plan.price, description: `${t("credit.subscribePlanDesc")} ${plan.name}`, date: Date.now() });
       await set(ref(db, `userSubscriptions/${user.uid}`), {
         planId: plan.id,
         planName: plan.name,
@@ -466,14 +466,14 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
       const notifRef = push(ref(db, `notifications/${user.uid}`));
       await set(notifRef, {
         type: "subscription",
-        title: "اشتراك جديد! 🎉",
-        message: `تم تفعيل باقة ${plan.name} لمدة ${plan.durationDays} يوم`,
+        title: t("credit.newSubscription"),
+        message: `${t("credit.planActivated")} ${plan.name} ${t("credit.forDuration")} ${plan.durationDays} ${t("credit.day")}`,
         isRead: false,
         createdAt: Date.now(),
       });
-      toast.success(`تم الاشتراك في باقة ${plan.name} بنجاح! 🎉`);
+      toast.success(`${t("credit.subscribeSuccessMsg")} ${plan.name} ${t("credit.successEmoji")}`);
     } catch {
-      toast.error("حدث خطأ أثناء الاشتراك");
+      toast.error(t("credit.subscriptionError"));
     }
     setIsSubscribing(false);
   };
@@ -482,9 +482,9 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
     if (!user || !mySubscription) return;
     try {
       await update(ref(db, `userSubscriptions/${user.uid}`), { autoRenew: !mySubscription.autoRenew });
-      toast.success(mySubscription.autoRenew ? "تم تعطيل التجديد التلقائي" : "تم تفعيل التجديد التلقائي");
+      toast.success(mySubscription.autoRenew ? t("credit.autoRenewDisabled") : t("credit.autoRenewEnabled"));
     } catch {
-      toast.error("حدث خطأ");
+      toast.error(t("credit.errorOccurred"));
     }
   };
 
@@ -493,9 +493,9 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="px-4 pt-16 text-center">
         <div className="bg-[#E8F5E9] rounded-2xl p-8">
           <Wallet className="w-16 h-16 mx-auto text-[#1B7A3D]/30 mb-4" />
-          <h2 className="text-xl font-bold text-gray-900 mb-2">سجل الدخول أولاً</h2>
-          <p className="text-gray-500 text-sm mb-4">يجب تسجيل الدخول لإدارة رصيدك</p>
-          <Button onClick={onAuthClick} className="bg-gradient-to-l from-[#1B7A3D] to-[#22A24D] text-white font-bold rounded-xl"><LogIn className="w-4 h-4 ml-2" />تسجيل الدخول</Button>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">{t("credit.loginFirst")}</h2>
+          <p className="text-gray-500 text-sm mb-4">{t("credit.mustLogin")}</p>
+          <Button onClick={onAuthClick} className="bg-gradient-to-l from-[#1B7A3D] to-[#22A24D] text-white font-bold rounded-xl"><LogIn className="w-4 h-4 ml-2" />{t("auth.login")}</Button>
         </div>
       </motion.div>
     );
@@ -521,7 +521,7 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
           {/* Wallet icon */}
           <div className="flex items-center justify-center gap-2 mb-3 relative z-10">
             <Wallet className="w-5 h-5 text-white/70" />
-            <p className="text-white/70 text-sm font-bold">رصيدك الحالي</p>
+            <p className="text-white/70 text-sm font-bold">{t("credit.currentBalance")}</p>
           </div>
 
           {/* Balance amount */}
@@ -534,15 +534,15 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
           >
             <p className="text-5xl font-black text-white tracking-tight">{balance.toLocaleString()}</p>
           </motion.div>
-          <p className="text-white/50 text-sm text-center relative z-10 mb-3">ريال يمني</p>
+          <p className="text-white/50 text-sm text-center relative z-10 mb-3">{t("credit.yemeniRial")}</p>
 
           {/* Max balance info */}
           {maxBalance > 0 && (
             <div className="relative z-10">
               <div className="bg-white/10 rounded-xl px-3 py-1.5">
                 <div className="flex items-center justify-between text-white/40 text-[10px]">
-                  <span>السقف الأقصى</span>
-                  <span>{maxBalance.toLocaleString()} ر.ي</span>
+                  <span>{t("credit.maxBalance")}</span>
+                  <span>{maxBalance.toLocaleString()} {t("credit.riyalShort")}</span>
                 </div>
                 {/* Progress bar */}
                 <div className="mt-1.5 h-1 bg-white/10 rounded-full overflow-hidden">
@@ -568,8 +568,8 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
           <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#1B7A3D] to-[#22A24D] flex items-center justify-center">
             <Plus className="w-6 h-6 text-white" />
           </div>
-          <span className="text-xs font-black text-gray-900">إيداع رصيد</span>
-          <span className="text-[9px] text-gray-400">حوّل المبلغ للأدمن</span>
+          <span className="text-xs font-black text-gray-900">{t("credit.deposit")}</span>
+          <span className="text-[9px] text-gray-400">{t("credit.transferToAdmin")}</span>
         </motion.button>
 
         {/* Redeem code button */}
@@ -581,8 +581,8 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
           <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-sky-500 to-sky-600 flex items-center justify-center">
             <Ticket className="w-6 h-6 text-white" />
           </div>
-          <span className="text-xs font-black text-gray-900">تحصيل كود</span>
-          <span className="text-[9px] text-gray-400">{showRedeem ? 'إخفاء حقل الكود' : 'أدخل كود الشحن'}</span>
+          <span className="text-xs font-black text-gray-900">{t("credit.redeemCode")}</span>
+          <span className="text-[9px] text-gray-400">{showRedeem ? t("credit.hideCodeField") : t("credit.enterChargeCode")}</span>
         </motion.button>
       </div>
 
@@ -599,7 +599,7 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
           >
             <div className="bg-white rounded-2xl card-shadow p-4 space-y-3 border-2 border-sky-200">
               <div className="flex items-center justify-between">
-                <h3 className="text-sky-600 font-bold text-sm flex items-center gap-2"><Ticket className="w-4 h-4" />أدخل كود الشحن</h3>
+                <h3 className="text-sky-600 font-bold text-sm flex items-center gap-2"><Ticket className="w-4 h-4" />{t("credit.redeemCodeTitle")}</h3>
                 <button onClick={() => setShowRedeem(false)} className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
               </div>
               <div className="relative">
@@ -620,10 +620,10 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
                 {isRedeeming ? (
                   <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full" />
                 ) : (
-                  <><Check className="w-5 h-5 ml-2" />تحصيل الكود</>
+                  <><Check className="w-5 h-5 ml-2" />{t("credit.redeemBtn")}</>
                 )}
               </Button>
-              <p className="text-[10px] text-gray-400 text-center">أدخل الكود الذي حصلت عليه من الأدمن لشحن رصيدك</p>
+              <p className="text-[10px] text-gray-400 text-center">{t("credit.redeemDesc")}</p>
             </div>
           </motion.div>
         )}
@@ -639,8 +639,8 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-xl bg-[#E8F5E9] flex items-center justify-center"><MapPin className="w-4 h-4 text-[#1B7A3D]" /></div>
             <div className="text-right">
-              <p className="text-xs font-bold text-gray-900">فلتر المديريات</p>
-              <p className="text-[10px] text-gray-400">{districtFilter === "all" ? "جميع المديريات" : districtFilter}</p>
+              <p className="text-xs font-bold text-gray-900">{t("credit.districtFilter")}</p>
+              <p className="text-[10px] text-gray-400">{districtFilter === "all" ? t("credit.allDistricts") : districtFilter}</p>
             </div>
           </div>
           <Filter className="w-4 h-4 text-[#1B7A3D]" />
@@ -659,7 +659,7 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
                   onClick={() => { setDistrictFilter("all"); setShowDistricts(false); }}
                   className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${districtFilter === "all" ? "bg-[#1B7A3D] text-white shadow-md" : "bg-white text-gray-600 card-shadow"}`}
                 >
-                  الكل
+                  {t("credit.all")}
                 </button>
                 {fbDistricts.map(d => (
                   <button
@@ -680,9 +680,9 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
       {fbNetworks.length > 0 && (
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-black text-gray-900 flex items-center gap-1.5"><Wifi className="w-4 h-4 text-[#1B7A3D]" />الشبكات المتاحة</h3>
+            <h3 className="text-sm font-black text-gray-900 flex items-center gap-1.5"><Wifi className="w-4 h-4 text-[#1B7A3D]" />{t("credit.availableNetworks")}</h3>
             <Badge className="bg-[#E8F5E9] text-[#1B7A3D] text-[9px]">
-              {districtFilter === "all" ? fbNetworks.length : fbNetworks.filter(n => n.location === districtFilter).length} شبكة
+              {districtFilter === "all" ? fbNetworks.length : fbNetworks.filter(n => n.location === districtFilter).length} {t("credit.networkCount")}
             </Badge>
           </div>
           <div className="space-y-2">
@@ -709,13 +709,13 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
                             )}
                             {net.ownerPhone && (
                               <a href={`https://wa.me/${net.ownerPhone}`} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-500 flex items-center gap-0.5 hover:underline">
-                                <Phone className="w-2.5 h-2.5" />تواصل
+                                <Phone className="w-2.5 h-2.5" />{t("credit.contact")}
                               </a>
                             )}
                           </div>
                         </div>
                       </div>
-                      <Badge className="bg-[#E8F5E9] text-[#1B7A3D] text-[9px]">{availableCount} كرت</Badge>
+                      <Badge className="bg-[#E8F5E9] text-[#1B7A3D] text-[9px]">{availableCount} {t("credit.cardCount")}</Badge>
                     </div>
                   </div>
                 );
@@ -723,7 +723,7 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
             {fbNetworks.filter(n => districtFilter === "all" || n.location === districtFilter).length === 0 && (
               <div className="bg-white rounded-xl card-shadow p-4 text-center">
                 <Wifi className="w-8 h-8 mx-auto text-gray-200 mb-1" />
-                <p className="text-gray-400 text-xs">لا توجد شبكات في هذه المديرية</p>
+                <p className="text-gray-400 text-xs">{t("credit.noNetworks")}</p>
               </div>
             )}
           </div>
@@ -735,15 +735,15 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
         <div className="bg-gradient-to-bl from-amber-400 to-orange-500 rounded-2xl p-4 mb-4 card-shadow-lg text-white">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2"><Crown className="w-5 h-5" /><span className="font-bold text-sm">{mySubscription.planName}</span></div>
-            <Badge className="bg-white/20 text-white border-0 text-[10px]">نشط</Badge>
+            <Badge className="bg-white/20 text-white border-0 text-[10px]">{t("credit.active")}</Badge>
           </div>
           <div className="flex items-center gap-2 text-white/80 text-xs mb-2">
             <Clock className="w-3 h-3" />
-            <span>ينتهي: {mySubscription.expiresAt ? formatDate(mySubscription.expiresAt) : ""}</span>
+            <span>{t("credit.expires")}: {mySubscription.expiresAt ? formatDate(mySubscription.expiresAt) : ""}</span>
           </div>
           <div className="flex items-center justify-between">
             <button onClick={toggleAutoRenew} className="text-[10px] text-white/70 hover:text-white transition-colors">
-              {mySubscription.autoRenew ? "🔄 التجديد التلقائي مفعل" : "⏸ التجديد التلقائي معطل"}
+              {mySubscription.autoRenew ? `🔄 ${t("credit.autoRenewOn")}` : `⏸ ${t("credit.autoRenewOff")}`}
             </button>
           </div>
         </div>
@@ -761,8 +761,8 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
               <Crown className="w-6 h-6 text-white" />
             </div>
             <div className="flex-1 text-right">
-              <p className="text-sm font-black text-gray-900">باقات الاشتراك</p>
-              <p className="text-[10px] text-gray-400">{activePlans.length} باقة متاحة — اشترك من رصيدك</p>
+              <p className="text-sm font-black text-gray-900">{t("credit.subscriptionPlans")}</p>
+              <p className="text-[10px] text-gray-400">{activePlans.length} {t("credit.availablePlans")}</p>
             </div>
             <Star className="w-5 h-5 text-amber-500" />
           </motion.button>
@@ -784,16 +784,16 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
                           <p className="text-sm font-black text-gray-900 flex items-center gap-1"><Crown className="w-4 h-4 text-amber-500" />{plan.name}</p>
                           {plan.description && <p className="text-[10px] text-gray-400 mt-0.5">{plan.description}</p>}
                         </div>
-                        <p className="text-lg font-black text-[#1B7A3D]">{plan.price.toLocaleString()} <span className="text-[10px] text-gray-400">ر.ي</span></p>
+                        <p className="text-lg font-black text-[#1B7A3D]">{plan.price.toLocaleString()} <span className="text-[10px] text-gray-400">{t("credit.riyalShort")}</span></p>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-gray-400">المدة: {plan.durationDays} يوم</span>
+                        <span className="text-[10px] text-gray-400">{t("credit.durationLabel")}: {plan.durationDays} {t("credit.day")}</span>
                         <Button
                           onClick={() => handleSubscribe(plan)}
                           disabled={balance < plan.price || isSubscribing || !!mySubscription}
                           className="bg-gradient-to-l from-amber-400 to-orange-500 text-white font-bold rounded-xl h-8 text-xs px-4"
                         >
-                          {mySubscription ? "مشترك بالفعل" : balance < plan.price ? "رصيد غير كافي" : "اشتراك"}
+                          {mySubscription ? t("credit.alreadySubscribed") : balance < plan.price ? t("credit.insufficientBalance") : t("credit.subscribe")}
                         </Button>
                       </div>
                     </div>
@@ -810,8 +810,8 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-xl bg-[#E8F5E9] flex items-center justify-center flex-shrink-0"><Shield className="w-5 h-5 text-[#1B7A3D]" /></div>
           <div>
-            <h3 className="text-[#1B7A3D] font-bold mb-1">كيف تشحن رصيدك؟</h3>
-            <p className="text-sm text-gray-500 leading-relaxed">يمكنك شحن رصيدك بطريقتين: إما عبر كود الشحن من الأدمن (أدخل الكود أعلاه)، أو من خلال تقديم طلب إيداع من صفحة الإيداع ثم حوّل المبلغ للحساب البنكي وأرسل الإيصال عبر الواتساب.</p>
+            <h3 className="text-[#1B7A3D] font-bold mb-1">{t("credit.howToCharge")}</h3>
+            <p className="text-sm text-gray-500 leading-relaxed">{t("credit.howToChargeDesc")}</p>
           </div>
         </div>
       </div>
@@ -823,7 +823,7 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
           className="w-full flex items-center justify-between mb-3"
         >
           <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
-            <Receipt className="w-5 h-5 text-[#1B7A3D]" />سجل العمليات
+            <Receipt className="w-5 h-5 text-[#1B7A3D]" />{t("credit.transactionHistory")}
           </h3>
           <div className="flex items-center gap-2">
             {history.length > 0 && (
@@ -847,7 +847,7 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
               {history.length === 0 ? (
                 <div className="bg-white rounded-2xl card-shadow p-8 text-center">
                   <Receipt className="w-12 h-12 mx-auto text-gray-200 mb-2" />
-                  <p className="text-gray-400 text-sm">لا توجد عمليات بعد</p>
+                  <p className="text-gray-400 text-sm">{t("credit.noTransactions")}</p>
                 </div>
               ) : (
                 <div className="relative max-h-96 overflow-y-auto custom-scrollbar space-y-2">
@@ -875,14 +875,14 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
                               <p className="text-xs font-bold text-gray-900">{item.description}</p>
                               <div className="flex items-center gap-2 mt-0.5">
                                 <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md ${config.bg} ${config.iconColor}`}>
-                                  {config.label}
+                                  {t(config.labelKey)}
                                 </span>
                                 <span className="text-[10px] text-gray-400">{item.date ? formatDate(item.date) : ""}</span>
                               </div>
                             </div>
                           </div>
                           <span className={`font-black text-sm ${isPositive ? "text-[#1B7A3D]" : "text-red-500"}`}>
-                            {config.sign}{item.amount.toLocaleString()} ر.ي
+                            {config.sign}{item.amount.toLocaleString()} {t("credit.riyalShort")}
                           </span>
                         </div>
                       </motion.div>
@@ -932,7 +932,7 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
                 transition={{ delay: 0.3 }}
                 className="text-lg font-black text-gray-900 mb-2"
               >
-                تم شحن رصيدك بنجاح! ✨
+                {t("credit.chargedSuccessTitle")}
               </motion.h3>
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
@@ -942,7 +942,7 @@ export function CreditPage({ user, onAuthClick, onNavigate }: CreditPageProps) {
                 <span className="text-4xl font-black text-[#1B7A3D]">
                   +{redeemSuccess.amount.toLocaleString()}
                 </span>
-                <p className="text-sm text-gray-400 mt-1">ريال يمني</p>
+                <p className="text-sm text-gray-400 mt-1">{t("credit.yemeniRial")}</p>
               </motion.div>
               <motion.div
                 initial={{ opacity: 0, y: [0, -10, 0] }}

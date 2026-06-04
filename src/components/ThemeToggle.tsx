@@ -4,9 +4,11 @@ import { useTheme } from "next-themes";
 import { motion } from "framer-motion";
 import { Sun, Moon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/context/LanguageContext";
 
 export function ThemeToggle({ compact = false }: { compact?: boolean }) {
   const { theme, setTheme } = useTheme();
+  const { t, isRTL } = useLanguage();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
@@ -23,8 +25,8 @@ export function ThemeToggle({ compact = false }: { compact?: boolean }) {
           ? "w-10 h-10 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600"
           : "w-10 h-10 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600"
         }`}
-      title={isDark ? "Light Mode" : "Dark Mode"}
-      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      title={isDark ? t("theme.light") : t("theme.dark")}
+      aria-label={t("theme.toggle")}
     >
       <motion.div
         key={isDark ? "moon" : "sun"}

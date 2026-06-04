@@ -29,8 +29,8 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://applenet.app"),
-  title: "Apple.NET - إدارة الهوت سبوت",
-  description: "تطبيق إدارة الهوت سبوت الاحترافي - شراء كروت إنترنت وإدارة رصيدك بسهولة وأمان",
+  title: "Apple.NET - Hotspot Management | Apple.NET - إدارة الهوت سبوت",
+  description: "Professional hotspot management platform - شراء كروت إنترنت وإدارة رصيدك بسهولة وأمان | Buy internet cards and manage your balance with ease and security",
   manifest: "/manifest.json",
   applicationName: "Apple.NET",
   appleMobileWebAppTitle: "Apple.NET",
@@ -49,8 +49,8 @@ export const metadata: Metadata = {
     title: "Apple.NET",
   },
   openGraph: {
-    title: "Apple.NET - إدارة الهوت سبوت",
-    description: "تطبيق إدارة الهوت سبوت الاحترافي - شراء كروت إنترنت وإدارة رصيدك بسهولة وأمان",
+    title: "Apple.NET - Hotspot Management | Apple.NET - إدارة الهوت سبوت",
+    description: "Professional hotspot management platform | تطبيق إدارة الهوت سبوت الاحترافي",
     siteName: "Apple.NET",
     locale: "ar_YE",
     type: "website",
@@ -65,8 +65,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary",
-    title: "Apple.NET - إدارة الهوت سبوت",
-    description: "تطبيق إدارة الهوت سبوت الاحترافي",
+    title: "Apple.NET - Hotspot Management | Apple.NET - إدارة الهوت سبوت",
+    description: "Professional hotspot management platform",
     images: ["/icons/icon-512x512.png"],
   },
 };

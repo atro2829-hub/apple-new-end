@@ -12,6 +12,7 @@ import { db } from "@/lib/firebase";
 import { ref, onValue, update, remove } from "firebase/database";
 import type { AppNotification } from "@/lib/types";
 import { iOSSpring, formatDate } from "@/lib/constants";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface NotificationCenterProps {
   uid: string;
@@ -24,56 +25,56 @@ const NOTIF_TYPE_CONFIG: Record<string, {
   bg: string;
   iconColor: string;
   barColor: string;
-  label: string;
+  labelKey: string;
 }> = {
   deposit_approved: {
     icon: CheckCircle,
     bg: "bg-[#E8F5E9]",
     iconColor: "text-[#1B7A3D]",
     barColor: "bg-[#1B7A3D]",
-    label: "إيداع مُوافق",
+    labelKey: "notifications2.depositApproved",
   },
   deposit_rejected: {
     icon: XCircle,
     bg: "bg-red-50",
     iconColor: "text-red-500",
     barColor: "bg-red-500",
-    label: "إيداع مرفوض",
+    labelKey: "notifications2.depositRejected",
   },
   card_purchased: {
     icon: ShoppingBag,
     bg: "bg-blue-50",
     iconColor: "text-blue-500",
     barColor: "bg-blue-500",
-    label: "شراء كرت",
+    labelKey: "notifications2.cardPurchased",
   },
   gift_received: {
     icon: Gift,
     bg: "bg-purple-50",
     iconColor: "text-purple-500",
     barColor: "bg-purple-500",
-    label: "هدية واردة",
+    labelKey: "notifications2.incomingGift",
   },
   subscription: {
     icon: Crown,
     bg: "bg-amber-50",
     iconColor: "text-amber-500",
     barColor: "bg-amber-500",
-    label: "اشتراك",
+    labelKey: "notifications2.subscription",
   },
   new_deposit_request: {
     icon: CreditCard,
     bg: "bg-sky-50",
     iconColor: "text-sky-500",
     barColor: "bg-sky-500",
-    label: "طلب إيداع",
+    labelKey: "notifications2.depositRequest",
   },
   general: {
     icon: Bell,
     bg: "bg-gray-50",
     iconColor: "text-gray-500",
     barColor: "bg-gray-400",
-    label: "عام",
+    labelKey: "notifications2.general",
   },
 };
 
@@ -82,6 +83,7 @@ function getTypeConfig(type: string) {
 }
 
 export function NotificationCenter({ uid, isAdmin }: NotificationCenterProps) {
+  const { t, isRTL } = useLanguage();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -205,6 +207,7 @@ export function NotificationCenter({ uid, isAdmin }: NotificationCenterProps) {
             transition={iOSSpring.gentle}
             className="fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-[9999] shadow-2xl"
             style={{ maxHeight: "85vh", display: "flex", flexDirection: "column" }}
+            dir={isRTL ? "rtl" : "ltr"}
           >
             {/* Drag Handle */}
             <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
@@ -215,9 +218,9 @@ export function NotificationCenter({ uid, isAdmin }: NotificationCenterProps) {
             <div className="px-4 pb-3 flex items-center justify-between border-b border-gray-100 flex-shrink-0">
               <div className="flex items-center gap-2">
                 <Bell className="w-5 h-5 text-[#1B7A3D]" />
-                <h3 className="text-lg font-black text-gray-900">الإشعارات</h3>
+                <h3 className="text-lg font-black text-gray-900">{t("notifications2.title")}</h3>
                 {unreadCount > 0 && (
-                  <Badge className="bg-red-500 text-white text-[10px]">{unreadCount} جديد</Badge>
+                  <Badge className="bg-red-500 text-white text-[10px]">{unreadCount} {t("notifications2.new")}</Badge>
                 )}
               </div>
               <div className="flex items-center gap-2">
@@ -228,7 +231,7 @@ export function NotificationCenter({ uid, isAdmin }: NotificationCenterProps) {
                     className="flex items-center gap-1 text-xs font-bold text-[#1B7A3D] hover:text-[#165E30] transition-colors px-2 py-1 rounded-lg hover:bg-[#E8F5E9]"
                   >
                     <CheckCheck className="w-3.5 h-3.5" />
-                    قراءة الكل
+                    {t("notifications2.readAll")}
                   </motion.button>
                 )}
                 <button
@@ -250,15 +253,15 @@ export function NotificationCenter({ uid, isAdmin }: NotificationCenterProps) {
                   >
                     <Bell className="w-10 h-10 mx-auto text-gray-200 mb-3" />
                   </motion.div>
-                  <p className="text-gray-400 text-sm">جاري تحميل الإشعارات...</p>
+                  <p className="text-gray-400 text-sm">{t("notifications2.loading")}</p>
                 </div>
               ) : notifications.length === 0 ? (
                 <div className="py-12 text-center">
                   <div className="w-16 h-16 rounded-full bg-[#E8F5E9] flex items-center justify-center mx-auto mb-4">
                     <Bell className="w-8 h-8 text-[#1B7A3D]" />
                   </div>
-                  <p className="text-gray-500 font-bold">لا توجد إشعارات</p>
-                  <p className="text-gray-400 text-xs mt-1">ستظهر الإشعارات هنا عند استلامك أي تحديث</p>
+                  <p className="text-gray-500 font-bold">{t("notifications2.noNotifications")}</p>
+                  <p className="text-gray-400 text-xs mt-1">{t("notifications2.noNotificationsDesc")}</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -292,7 +295,7 @@ export function NotificationCenter({ uid, isAdmin }: NotificationCenterProps) {
                         {/* Content */}
                         <div className="flex-1 min-w-0 pr-4">
                           <div className="flex items-center gap-1.5 mb-0.5">
-                            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${config.bg} ${config.iconColor}`}>{config.label}</span>
+                            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${config.bg} ${config.iconColor}`}>{t(config.labelKey)}</span>
                           </div>
                           <p className="text-sm font-bold text-gray-900">{notif.title}</p>
                           <p className="text-xs text-gray-500 mt-0.5 leading-relaxed line-clamp-2">{notif.message}</p>
@@ -343,7 +346,7 @@ export function NotificationCenter({ uid, isAdmin }: NotificationCenterProps) {
             exit={{ opacity: 0, scale: 0.85, y: 20 }}
             transition={{ ...iOSSpring.bouncy }}
             className="fixed z-[10001] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-[400px] bg-white rounded-3xl shadow-2xl overflow-hidden"
-            dir="rtl"
+            dir={isRTL ? "rtl" : "ltr"}
           >
             {/* Top Color Bar */}
             <div className={`h-2 w-full ${getBarColor(selectedNotif.type)}`} />
@@ -365,10 +368,10 @@ export function NotificationCenter({ uid, isAdmin }: NotificationCenterProps) {
                 </div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className={`text-[9px] font-bold px-2 py-0.5 rounded ${getBgColor(selectedNotif.type)} ${getTypeConfig(selectedNotif.type).iconColor}`}>
-                    {getTypeConfig(selectedNotif.type).label}
+                    {t(getTypeConfig(selectedNotif.type).labelKey)}
                   </span>
                   {!selectedNotif.isRead && (
-                    <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-[#E8F5E9] text-[#1B7A3D]">جديد</span>
+                    <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-[#E8F5E9] text-[#1B7A3D]">{t("notifications2.new")}</span>
                   )}
                 </div>
                 <h3 className="text-lg font-black text-gray-900 leading-snug">{selectedNotif.title}</h3>
@@ -391,13 +394,13 @@ export function NotificationCenter({ uid, isAdmin }: NotificationCenterProps) {
                   className="flex-1 py-3 rounded-2xl bg-red-50 text-red-500 font-bold text-sm hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
                 >
                   <Trash2 className="w-4 h-4" />
-                  حذف
+                  {t("notifications2.delete")}
                 </button>
                 <button
                   onClick={() => setSelectedNotif(null)}
                   className="flex-1 py-3 rounded-2xl bg-[#1B7A3D] text-white font-bold text-sm hover:bg-[#165E30] transition-colors"
                 >
-                  إغلاق
+                  {t("common.close")}
                 </button>
               </div>
             </div>

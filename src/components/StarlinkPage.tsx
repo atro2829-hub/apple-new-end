@@ -17,6 +17,7 @@ import { formatDate, ADMIN_WHATSAPP, generateWhatsAppLink, iOSSpring } from "@/l
 import type { StarlinkProduct, StarlinkOrder, AppUser } from "@/lib/types";
 import type { User } from "firebase/auth";
 import { toast } from "sonner";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface StarlinkPageProps {
   user: User | null;
@@ -24,6 +25,7 @@ interface StarlinkPageProps {
 }
 
 export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
+  const { t, isRTL } = useLanguage();
   const [products, setProducts] = useState<StarlinkProduct[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<StarlinkProduct | null>(null);
   const [showDetailSheet, setShowDetailSheet] = useState(false);
@@ -83,7 +85,7 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
   const handleOrder = async () => {
     if (!user || !selectedProduct) return;
     if (!orderPhone.trim()) {
-      toast.error("يرجى إدخال رقم الهاتف");
+      toast.error(t("starlink.phoneNumber"));
       return;
     }
     setIsOrdering(true);
@@ -91,7 +93,7 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
       const orderRef = push(ref(db, "starlinkOrders"));
       await set(orderRef, {
         userId: user.uid,
-        userName: userInfo?.displayName || user.displayName || user.email || "مستخدم",
+        userName: userInfo?.displayName || user.displayName || user.email || t("credit.user"),
         userEmail: user.email || "",
         userPhone: orderPhone.trim(),
         productId: selectedProduct.id,
@@ -106,8 +108,8 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
       const notifRef = push(ref(db, "notifications/admin"));
       await set(notifRef, {
         type: "general",
-        title: "طلب Starlink جديد 🛰️",
-        message: `${userInfo?.displayName || user.email} يطلب ${selectedProduct.name} بسعر $${selectedProduct.priceUSD}`,
+        title: `🛰️ ${t("starlink.orders")}`,
+        message: `${userInfo?.displayName || user.email} - ${selectedProduct.name} $${selectedProduct.priceUSD}`,
         isRead: false,
         createdAt: Date.now(),
         relatedId: orderRef.key,
@@ -117,16 +119,16 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
       const userNotifRef = push(ref(db, `notifications/${user.uid}`));
       await set(userNotifRef, {
         type: "general",
-        title: "تم استلام طلبك ✅",
-        message: `تم استلام طلبك لجهاز ${selectedProduct.name}. سيتم التواصل معك قريباً لتأكيد الطلب والدفع.`,
+        title: `✅ ${t("starlink.orderSuccess")}`,
+        message: t("starlink.orderSuccess"),
         isRead: false,
         createdAt: Date.now(),
       });
 
-      toast.success("تم تقديم الطلب بنجاح! سيتم التواصل معك عبر الواتساب");
+      toast.success(t("starlink.orderSuccess"));
 
       // فتح واتساب
-      const msg = `🛰️ طلب شراء Starlink\n\n👤 الاسم: ${userInfo?.displayName || user.email}\n📱 الهاتف: ${orderPhone.trim()}\n📦 المنتج: ${selectedProduct.name}\n💰 السعر: $${selectedProduct.priceUSD} USD${orderNotes.trim() ? `\n📝 ملاحظات: ${orderNotes.trim()}` : ""}\n\n⏰ التاريخ: ${new Date().toLocaleString("ar-YE")}\n\n✅ في انتظار التأكيد والدفع`;
+      const msg = `🛰️ Starlink Order\n\n👤 Name: ${userInfo?.displayName || user.email}\n📱 Phone: ${orderPhone.trim()}\n📦 Product: ${selectedProduct.name}\n💰 Price: $${selectedProduct.priceUSD} USD${orderNotes.trim() ? `\n📝 Notes: ${orderNotes.trim()}` : ""}\n\n⏰ Date: ${new Date().toLocaleString()}\n\n✅ Pending confirmation & payment`;
       setTimeout(() => {
         window.open(generateWhatsAppLink(ADMIN_WHATSAPP, msg), "_blank");
       }, 500);
@@ -136,18 +138,18 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
       setOrderPhone(userInfo?.phone || "");
       setOrderNotes("");
     } catch {
-      toast.error("حدث خطأ أثناء تقديم الطلب");
+      toast.error(t("starlink.orderError"));
     }
     setIsOrdering(false);
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "pending": return <Badge className="bg-yellow-50 text-yellow-600 border-yellow-200">⏳ قيد المراجعة</Badge>;
-      case "confirmed": return <Badge className="bg-blue-50 text-blue-600 border-blue-200">✅ تم التأكيد</Badge>;
-      case "shipped": return <Badge className="bg-purple-50 text-purple-600 border-purple-200">🚚 تم الشحن</Badge>;
-      case "delivered": return <Badge className="bg-[#E8F5E9] text-[#1B7A3D] border-green-200">📦 تم التسليم</Badge>;
-      case "cancelled": return <Badge className="bg-red-50 text-red-500 border-red-200">❌ ملغي</Badge>;
+      case "pending": return <Badge className="bg-yellow-50 text-yellow-600 border-yellow-200">⏳ {t("starlink.pendingReview")}</Badge>;
+      case "confirmed": return <Badge className="bg-blue-50 text-blue-600 border-blue-200">✅ {t("starlink.confirm")}</Badge>;
+      case "shipped": return <Badge className="bg-purple-50 text-purple-600 border-purple-200">🚚 {t("starlink.ship")}</Badge>;
+      case "delivered": return <Badge className="bg-[#E8F5E9] text-[#1B7A3D] border-green-200">📦 {t("starlink.deliver")}</Badge>;
+      case "cancelled": return <Badge className="bg-red-50 text-red-500 border-red-200">❌</Badge>;
       default: return null;
     }
   };
@@ -166,7 +168,7 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
 
   const openOrderModal = (product: StarlinkProduct) => {
     if (!user) { onAuthClick(); return; }
-    if (product.quantity <= 0) { toast.error("المنتج غير متوفر حالياً"); return; }
+    if (product.quantity <= 0) { toast.error(t("starlink.outOfStock")); return; }
     setSelectedProduct(product);
     setOrderPhone(userInfo?.phone || "");
     setOrderNotes("");
@@ -180,6 +182,7 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
       exit={{ opacity: 0 }}
       transition={{ type: "spring", stiffness: 120, damping: 14 }}
       className="px-4 pt-4"
+      dir={isRTL ? "rtl" : "ltr"}
     >
       {/* Header */}
       <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-5 mb-4 relative overflow-hidden">
@@ -197,21 +200,21 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
             </div>
             <div>
               <h2 className="text-xl font-black text-white">Starlink</h2>
-              <p className="text-xs text-white/50">إنترنت فضائي عالي السرعة</p>
+              <p className="text-xs text-white/50">{t("starlink.title")}</p>
             </div>
           </div>
           <div className="flex items-center gap-4 mt-3">
             <div className="flex items-center gap-1.5 bg-white/10 rounded-lg px-2.5 py-1.5">
               <Zap className="w-3.5 h-3.5 text-yellow-400" />
-              <span className="text-[10px] text-white/70 font-bold">سرعات عالية</span>
+              <span className="text-[10px] text-white/70 font-bold">{t("starlink.highSpeed")}</span>
             </div>
             <div className="flex items-center gap-1.5 bg-white/10 rounded-lg px-2.5 py-1.5">
               <Globe className="w-3.5 h-3.5 text-blue-400" />
-              <span className="text-[10px] text-white/70 font-bold">تغطية عالمية</span>
+              <span className="text-[10px] text-white/70 font-bold">{t("starlink.globalCoverage")}</span>
             </div>
             <div className="flex items-center gap-1.5 bg-white/10 rounded-lg px-2.5 py-1.5">
               <DollarSign className="w-3.5 h-3.5 text-green-400" />
-              <span className="text-[10px] text-white/70 font-bold">الأسعار بالدولار</span>
+              <span className="text-[10px] text-white/70 font-bold">{t("starlink.pricesUSD")}</span>
             </div>
           </div>
         </div>
@@ -221,8 +224,8 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
       {products.length === 0 ? (
         <div className="bg-white rounded-2xl card-shadow p-8 text-center mt-4">
           <Satellite className="w-14 h-14 mx-auto text-gray-200 mb-3" />
-          <p className="text-gray-400 text-sm font-bold">لا توجد منتجات متاحة حالياً</p>
-          <p className="text-gray-300 text-xs mt-1">ترقبوا المنتجات الجديدة قريباً</p>
+          <p className="text-gray-400 text-sm font-bold">{t("starlink.noProducts")}</p>
+          <p className="text-gray-300 text-xs mt-1">{t("starlink.stayTuned")}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
@@ -264,7 +267,7 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
                 {/* Stock Badge */}
                 <div className="absolute top-2 left-2">
                   <Badge className={`${product.quantity > 0 ? "bg-[#E8F5E9] text-[#1B7A3D]" : "bg-red-50 text-red-500"} text-[9px] shadow-sm`}>
-                    {product.quantity > 0 ? `${product.quantity} متاح` : "نفذ المخزون"}
+                    {product.quantity > 0 ? `${product.quantity} ${t("starlink.available")}` : t("starlink.outOfStock")}
                   </Badge>
                 </div>
               </div>
@@ -297,7 +300,7 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
                     className="flex-1 py-2 rounded-xl bg-gray-50 text-gray-600 text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-gray-100 transition-colors"
                   >
                     <Eye className="w-3.5 h-3.5" />
-                    التفاصيل
+                    {t("starlink.details")}
                   </motion.button>
                   <motion.button
                     whileTap={{ scale: 0.97 }}
@@ -306,7 +309,7 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
                     className="flex-1 py-2 rounded-xl bg-gradient-to-l from-[#1B7A3D] to-[#22A24D] text-white text-xs font-bold flex items-center justify-center gap-1.5 btn-green-shadow disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <ShoppingCart className="w-3.5 h-3.5" />
-                    اطلب الآن
+                    {t("starlink.orderNow")}
                   </motion.button>
                 </div>
               </div>
@@ -327,12 +330,12 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
               <Package className="w-6 h-6 text-white" />
             </div>
             <div className="flex-1 text-right">
-              <p className="text-sm font-black text-gray-900">طلبات Starlink</p>
-              <p className="text-[10px] text-gray-400">{userOrders.length} طلب</p>
+              <p className="text-sm font-black text-gray-900">{t("starlink.orders")}</p>
+              <p className="text-[10px] text-gray-400">{userOrders.length} {t("starlink.order")}</p>
             </div>
             <div className="flex items-center gap-2">
               <Badge className="bg-blue-50 text-blue-600 text-[9px]">
-                {userOrders.filter(o => o.status === "pending").length} قيد المراجعة
+                {userOrders.filter(o => o.status === "pending").length} {t("starlink.pendingReview")}
               </Badge>
               {showOrders ? (
                 <ChevronUp className="w-5 h-5 text-blue-500" />
@@ -374,7 +377,7 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
                         {order.status !== "cancelled" && (
                           <div className="mb-2">
                             <div className="flex items-center justify-between mb-1">
-                              {["مراجعة", "تأكيد", "شحن", "تسليم"].map((step, idx) => (
+                              {[t("starlink.review"), t("starlink.confirm"), t("starlink.ship"), t("starlink.deliver")].map((step, idx) => (
                                 <span key={idx} className={`text-[8px] font-bold ${idx <= progress ? "text-[#1B7A3D]" : "text-gray-300"}`}>
                                   {step}
                                 </span>
@@ -424,9 +427,9 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
             <MessageCircle className="w-5 h-5 text-blue-500" />
           </div>
           <div>
-            <h4 className="text-xs font-black text-blue-800 mb-1">كيف تطلب؟</h4>
+            <h4 className="text-xs font-black text-blue-800 mb-1">{t("starlink.howToOrder")}</h4>
             <p className="text-[10px] text-blue-600 leading-relaxed">
-              اختر المنتج المناسب لك ثم اضغط "اطلب الآن". أدخل رقم هاتفك وأي ملاحظات، ثم سيتم توجيهك للواتساب لإتمام عملية الدفع والتأكيد. الأسعار بالدولار الأمريكي (USD) ويتم الدفع خارجياً.
+              {t("starlink.howToOrderDesc")} {t("starlink.paymentUSD")}
             </p>
           </div>
         </div>
@@ -458,7 +461,7 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
 
               {/* Header */}
               <div className="px-5 pb-3 flex items-center justify-between border-b border-gray-100 flex-shrink-0">
-                <h3 className="text-lg font-black text-gray-900">تفاصيل المنتج</h3>
+                <h3 className="text-lg font-black text-gray-900">{t("starlink.productDetails")}</h3>
                 <button onClick={() => setShowDetailSheet(false)} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
                   <X className="w-4 h-4 text-gray-500" />
                 </button>
@@ -492,7 +495,7 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
                 {/* Availability */}
                 <div className="mb-3">
                   <Badge className={`${selectedProduct.quantity > 0 ? "bg-[#E8F5E9] text-[#1B7A3D]" : "bg-red-50 text-red-500"} text-xs`}>
-                    {selectedProduct.quantity > 0 ? `✅ متوفر (${selectedProduct.quantity} قطعة)` : "❌ نفذ المخزون"}
+                    {selectedProduct.quantity > 0 ? `✅ ${t("starlink.inStock")} (${selectedProduct.quantity})` : `❌ ${t("starlink.outOfStock")}`}
                   </Badge>
                 </div>
 
@@ -507,14 +510,14 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
                 <div className="mb-4">
                   <h4 className="text-sm font-black text-gray-900 mb-3 flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-[#1B7A3D]" />
-                    المواصفات التفصيلية
+                    {t("starlink.detailedSpecs")}
                   </h4>
                   <div className="grid grid-cols-2 gap-2">
                     {[
-                      { icon: Upload, label: "سرعة التحميل", value: selectedProduct.specs?.downloadSpeed || "-", color: "bg-green-50 text-green-600" },
-                      { icon: Zap, label: "سرعة الرفع", value: selectedProduct.specs?.uploadSpeed || "-", color: "bg-blue-50 text-blue-600" },
-                      { icon: Clock, label: "زمن الاستجابة", value: selectedProduct.specs?.latency || "-", color: "bg-purple-50 text-purple-600" },
-                      { icon: Globe, label: "نطاق التغطية", value: selectedProduct.specs?.coverage || "-", color: "bg-orange-50 text-orange-600" },
+                      { icon: Upload, label: t("starlink.downloadSpeed"), value: selectedProduct.specs?.downloadSpeed || "-", color: "bg-green-50 text-green-600" },
+                      { icon: Zap, label: t("starlink.uploadSpeed"), value: selectedProduct.specs?.uploadSpeed || "-", color: "bg-blue-50 text-blue-600" },
+                      { icon: Clock, label: t("starlink.latency"), value: selectedProduct.specs?.latency || "-", color: "bg-purple-50 text-purple-600" },
+                      { icon: Globe, label: t("starlink.coverage"), value: selectedProduct.specs?.coverage || "-", color: "bg-orange-50 text-orange-600" },
                     ].map((spec, si) => (
                       <div key={si} className={`${spec.color.split(" ")[0]} rounded-xl p-3 flex items-center gap-2.5`}>
                         <spec.icon className={`w-5 h-5 ${spec.color.split(" ")[1]}`} />
@@ -530,10 +533,10 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
                 {/* Features */}
                 <div className="space-y-2 mb-4">
                   {[
-                    { icon: Globe, text: "تغطية عالمية — يعمل في أي مكان" },
-                    { icon: Zap, text: "سرعات تصل إلى 200+ Mbps" },
-                    { icon: ShieldCheck, text: "ضمان官方 من Starlink" },
-                    { icon: Heart, text: "دعم فني على مدار الساعة" },
+                    { icon: Globe, text: t("starlink.globalCoverageDesc") },
+                    { icon: Zap, text: t("starlink.speedUpTo") },
+                    { icon: ShieldCheck, text: t("starlink.warranty") },
+                    { icon: Heart, text: t("starlink.support247") },
                   ].map((feat, fi) => (
                     <div key={fi} className="flex items-center gap-2.5">
                       <div className="w-8 h-8 rounded-lg bg-[#E8F5E9] flex items-center justify-center flex-shrink-0">
@@ -556,7 +559,7 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
                   className="w-full bg-gradient-to-l from-[#1B7A3D] to-[#22A24D] text-white font-bold rounded-xl h-12 text-base btn-green-shadow disabled:opacity-50"
                 >
                   <ShoppingCart className="w-5 h-5 ml-2" />
-                  اطلب الآن — ${selectedProduct.priceUSD.toLocaleString()} USD
+                  {t("starlink.orderNow")} — ${selectedProduct.priceUSD.toLocaleString()} USD
                 </Button>
               </div>
             </motion.div>
@@ -590,7 +593,7 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
 
               {/* Header */}
               <div className="px-5 pb-3 flex items-center justify-between border-b border-gray-100 flex-shrink-0">
-                <h3 className="text-lg font-black text-gray-900">تأكيد الطلب</h3>
+                <h3 className="text-lg font-black text-gray-900">{t("starlink.confirmOrder")}</h3>
                 <button onClick={() => setShowOrderModal(false)} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
                   <X className="w-4 h-4 text-gray-500" />
                 </button>
@@ -625,7 +628,7 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
                 <div className="mb-4">
                   <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5 mb-1.5">
                     <Phone className="w-3.5 h-3.5 text-[#1B7A3D]" />
-                    رقم الهاتف <span className="text-red-400">*</span>
+                    {t("starlink.phoneNumber")} <span className="text-red-400">*</span>
                   </label>
                   <Input
                     value={orderPhone}
@@ -640,13 +643,13 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
                 <div className="mb-4">
                   <label className="text-xs font-bold text-gray-700 flex items-center gap-1.5 mb-1.5">
                     <FileText className="w-3.5 h-3.5 text-[#1B7A3D]" />
-                    ملاحظات (اختياري)
+                    {t("starlink.notes")}
                   </label>
                   <textarea
                     value={orderNotes}
                     onChange={(e) => setOrderNotes(e.target.value)}
                     className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl px-3 py-2.5 text-sm min-h-[70px] resize-none focus:outline-none focus:ring-2 focus:ring-[#1B7A3D]/30 focus:border-[#1B7A3D] transition-all"
-                    placeholder="أضف أي ملاحظات أو طلبات خاصة..."
+                    placeholder="..."
                   />
                 </div>
 
@@ -655,7 +658,7 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
                   <div className="bg-white rounded-2xl card-shadow p-4 mb-4">
                     <h4 className="text-xs font-black text-gray-900 mb-3 flex items-center gap-1.5">
                       <Info className="w-3.5 h-3.5 text-[#1B7A3D]" />
-                      معلومات التواصل
+                      {t("starlink.contactInfo")}
                     </h4>
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
@@ -664,7 +667,7 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
                       </div>
                       <div className="flex items-center gap-2">
                         <Phone className="w-3.5 h-3.5 text-gray-400" />
-                        <span className="text-xs text-gray-600" dir="ltr">{orderPhone || userInfo.phone || "غير محدد"}</span>
+                        <span className="text-xs text-gray-600" dir="ltr">{orderPhone || userInfo.phone || t("starlink.notSpecified")}</span>
                       </div>
                     </div>
                   </div>
@@ -673,7 +676,7 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
                 {/* Payment Notice */}
                 <div className="bg-amber-50 rounded-xl p-3 mb-4 border border-amber-100">
                   <p className="text-[10px] text-amber-700 leading-relaxed font-bold">
-                    ⚠️ الدفع بالدولار الأمريكي (USD) ويتم خارج التطبيق عبر الواتساب. بعد تقديم الطلب سيتم التواصل معك لتأكيد الدفع والشحن.
+                    ⚠️ {t("starlink.paymentUSD")}
                   </p>
                 </div>
               </div>
@@ -685,7 +688,7 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
                     onClick={() => setShowOrderModal(false)}
                     className="flex-1 bg-gray-100 text-gray-600 font-bold rounded-xl h-12 hover:bg-gray-200"
                   >
-                    إلغاء
+                    {t("common.cancel")}
                   </Button>
                   <Button
                     onClick={handleOrder}
@@ -697,7 +700,7 @@ export function StarlinkPage({ user, onAuthClick }: StarlinkPageProps) {
                     ) : (
                       <>
                         <ShoppingCart className="w-4 h-4 ml-2" />
-                        تأكيد الطلب
+                        {t("starlink.confirmOrder")}
                       </>
                     )}
                   </Button>
