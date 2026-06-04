@@ -11,6 +11,7 @@ import { db } from "@/lib/firebase";
 import { ref, onValue, get } from "firebase/database";
 import { NETWORKS as DEFAULT_NETWORKS, PROVINCES, getDistricts, getDistrictsEn } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { NetworkDetailModal } from "@/components/NetworkDetailModal";
 import type { Advertisement, SimCard, NetworkItem, CardItem } from "@/lib/types";
